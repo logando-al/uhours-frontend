@@ -12,7 +12,7 @@ const isActive = (path: string) => route.path.startsWith(path)
 </script>
 
 <template>
-  <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-[448px]">
+  <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-[448px] md:hidden">
     <div class="flex items-center justify-around bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl px-2 py-2 shadow-xl backdrop-blur-md">
       <NuxtLink
         v-for="tab in tabs"

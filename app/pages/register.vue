@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 
+definePageMeta({ layout: 'auth' })
 useHead({ title: 'Register — UHours' })
 
 const config = useRuntimeConfig()

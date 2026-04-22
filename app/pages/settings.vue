@@ -153,7 +153,7 @@ onMounted(loadSemesters)
 </script>
 
 <template>
-  <div class="min-h-dvh pb-28 px-4 pt-6 max-w-[480px] mx-auto">
+  <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <h1 class="text-xl font-bold mb-6">Settings</h1>
 
     <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
@@ -237,11 +237,10 @@ onMounted(loadSemesters)
       </div>
     </section>
 
-    <BaseButton variant="ghost" full-width class="text-red-400 hover:text-red-300" @click="logout">
+    <BaseButton variant="ghost" full-width class="md:hidden text-red-400 hover:text-red-300" @click="logout">
       Sign out
     </BaseButton>
 
     <AppNav />
-    <AppToast />
   </div>
 </template>

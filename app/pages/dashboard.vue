@@ -79,13 +79,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-dvh pb-28 px-4 pt-6 max-w-[480px] mx-auto">
+  <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-xl font-bold">Dashboard</h1>
         <p class="text-sm text-[var(--muted)]">{{ auth.user?.username }}</p>
       </div>
-      <button class="text-[var(--muted)] hover:text-[var(--fg)] transition-colors p-2" @click="logout()">
+      <button class="md:hidden text-[var(--muted)] hover:text-[var(--fg)] transition-colors p-2" @click="logout()">
         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
       </button>
     </div>
@@ -163,12 +163,11 @@ onMounted(async () => {
 
     <NuxtLink
       to="/log/add"
-      class="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg hover:opacity-90 active:scale-95 transition-all"
+      class="fixed bottom-24 md:bottom-8 right-4 md:right-8 w-14 h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg hover:opacity-90 active:scale-95 transition-all"
     >
       <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
     </NuxtLink>
 
     <AppNav />
-    <AppToast />
   </div>
 </template>

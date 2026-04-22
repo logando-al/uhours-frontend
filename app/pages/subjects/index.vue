@@ -182,7 +182,7 @@ function capitalize(value: string) {
 </script>
 
 <template>
-  <div class="min-h-dvh pb-28 px-4 pt-6 max-w-[480px] mx-auto">
+  <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-5 gap-3">
       <h1 class="text-xl font-bold">Subjects</h1>
       <button
@@ -267,7 +267,6 @@ function capitalize(value: string) {
     </div>
 
     <AppNav />
-    <AppToast />
   </div>
 </template>
 

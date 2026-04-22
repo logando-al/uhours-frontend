@@ -229,7 +229,7 @@ async function saveAll() {
 </script>
 
 <template>
-  <div class="min-h-dvh pb-28 px-4 pt-6 max-w-[480px] mx-auto">
+  <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <div class="flex items-center gap-3 mb-5">
       <button class="text-[var(--muted)] hover:text-[var(--fg)] p-1" @click="router.back()">
         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6" /></svg>
@@ -345,6 +345,5 @@ async function saveAll() {
       </div>
     </template>
 
-    <AppToast />
   </div>
 </template>

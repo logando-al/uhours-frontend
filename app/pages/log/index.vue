@@ -118,7 +118,7 @@ function statusColor(status: string) {
 </script>
 
 <template>
-  <div class="min-h-dvh pb-28 px-4 pt-6 max-w-[480px] mx-auto">
+  <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <h1 class="text-xl font-bold mb-4">Log</h1>
 
     <BaseSelect v-if="semesterOptions.length" v-model="selectedSemesterId" label="Semester" :options="semesterOptions" class="mb-4" />
@@ -178,11 +178,10 @@ function statusColor(status: string) {
       </div>
     </div>
 
-    <NuxtLink to="/log/add" class="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg hover:opacity-90 active:scale-95 transition-all">
+    <NuxtLink to="/log/add" class="fixed bottom-24 md:bottom-8 right-4 md:right-8 w-14 h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg hover:opacity-90 active:scale-95 transition-all">
       <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
     </NuxtLink>
 
     <AppNav />
-    <AppToast />
   </div>
 </template>

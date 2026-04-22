@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'auth' })
 useHead({ title: 'Forgot Password — UHours' })
 
 const config = useRuntimeConfig()
