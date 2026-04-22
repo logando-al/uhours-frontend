@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Settings — UHours' })
 
 const { apiFetch, logout } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 const { theme, setTheme, init } = useTheme()
 
 onMounted(init)

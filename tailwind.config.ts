@@ -20,5 +20,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-primeui')],
 } satisfies Config

@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Change Password — UHours' })
 
 const { apiFetch, logout } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 const router = useRouter()
 
 const step = ref<1 | 2>(1)

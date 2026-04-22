@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Add Log — UHours' })
 
 const { apiFetch } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 const router = useRouter()
 const route = useRoute()
 

@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Subjects — UHours' })
 
 const { apiFetch } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 
 interface Semester {
   id: string

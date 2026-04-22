@@ -6,7 +6,7 @@ interface Toast {
 
 const toasts = useState<Toast[]>('toasts', () => [])
 
-export function useToast() {
+export function useAppToast() {
   function show(type: Toast['type'], message: string, duration = 4000) {
     const id = Math.random().toString(36).slice(2)
     toasts.value.push({ id, type, message })

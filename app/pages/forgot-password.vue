@@ -4,7 +4,7 @@ useHead({ title: 'Forgot Password — UHours' })
 
 const config = useRuntimeConfig()
 const router = useRouter()
-const toast = useToast()
+const toast = useAppToast()
 
 const step = ref<1 | 2>(1)
 const loading = ref(false)

@@ -6,7 +6,7 @@ useHead({ title: 'Register — UHours' })
 
 const config = useRuntimeConfig()
 const router = useRouter()
-const toast = useToast()
+const toast = useAppToast()
 const auth = useAuthStore()
 
 // Redirect if already authenticated

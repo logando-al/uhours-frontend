@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Batch Log — UHours' })
 
 const { apiFetch } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 const router = useRouter()
 
 type BatchTab = 'auto' | 'spreadsheet'

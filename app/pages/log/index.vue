@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Log — UHours' })
 
 const { apiFetch } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 const route = useRoute()
 
 type Status = 'all' | 'approved' | 'pending' | 'rejected' | 'not_yet_submitted'

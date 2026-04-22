@@ -6,7 +6,7 @@ useHead({ title: 'Dashboard — UHours' })
 
 const auth = useAuthStore()
 const { apiFetch, logout } = useAuth()
-const toast = useToast()
+const toast = useAppToast()
 
 interface DashboardData {
   quota_hours: number

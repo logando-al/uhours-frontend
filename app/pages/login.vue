@@ -6,7 +6,7 @@ useHead({ title: 'Sign In — UHours' })
 
 const config = useRuntimeConfig()
 const router = useRouter()
-const toast = useToast()
+const toast = useAppToast()
 const auth = useAuthStore()
 
 onMounted(() => {
