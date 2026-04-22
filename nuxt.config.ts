@@ -57,7 +57,7 @@ export default defineNuxtConfig({
         options: {
           prefix: 'p',
           // dark = default (:root), light = [data-theme="light"]
-          darkModeSelector: ':root:not([data-theme="light"])',
+          darkModeSelector: '[data-theme="dark"]',
           cssLayer: false,
         },
       },
@@ -91,6 +91,12 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      script: [
+        {
+          // Set data-theme before first paint to prevent FOUC
+          innerHTML: `(function(){var e=localStorage.getItem('uhours-theme-explicit')==='true',s=localStorage.getItem('uhours-theme'),t=e&&(s==='dark'||s==='light'||s==='system')?s:'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();`,
+        },
+      ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         {

@@ -14,11 +14,11 @@ export function useTheme() {
     if (value === 'light') {
       html.setAttribute('data-theme', 'light')
     } else if (value === 'dark') {
-      html.removeAttribute('data-theme')
+      html.setAttribute('data-theme', 'dark')
     } else {
       // system — follow OS preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      prefersDark ? html.removeAttribute('data-theme') : html.setAttribute('data-theme', 'light')
+      html.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
     }
   }
 
@@ -36,7 +36,7 @@ export function useTheme() {
     if (value === 'system') {
       mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
       systemListener = (e: MediaQueryListEvent) => {
-        e.matches ? document.documentElement.removeAttribute('data-theme') : document.documentElement.setAttribute('data-theme', 'light')
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
       }
       mediaQuery.addEventListener('change', systemListener)
     }

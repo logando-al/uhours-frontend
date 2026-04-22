@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode (default) — Education Blue */
-:root {
+/* Dark mode — Education Blue (also covers initial load before JS sets data-theme) */
+:root, [data-theme="dark"] {
   --bg:          #070E1C;
   --bg-card:     #0C1A35;
   --fg:          #E2EEFF;
