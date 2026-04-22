@@ -37,7 +37,6 @@ async function submitForgot() {
       toast.error('Verification failed. Please try again.')
       return
     }
-    // Always show step 2 (do not reveal if user exists)
     step.value = 2
     await nextTick()
     cellRefs[0].value?.focus()
@@ -102,9 +101,13 @@ async function submitReset() {
         <p class="text-sm text-[var(--muted)] mb-5">We'll send a code to your Telegram</p>
 
         <form class="flex flex-col gap-4" @submit.prevent="submitForgot">
-          <BaseInput v-model="username" label="Username" placeholder="your_username" :error="usernameError" required />
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Username</label>
+            <InputText v-model="username" placeholder="your_username" fluid :invalid="!!usernameError" />
+            <small v-if="usernameError" class="text-red-400">{{ usernameError }}</small>
+          </div>
           <TurnstileWidget v-model="turnstileToken" />
-          <BaseButton type="submit" :loading="loading" full-width class="mt-1">Send code</BaseButton>
+          <Button type="submit" :loading="loading" label="Send code" fluid class="mt-1" />
         </form>
 
         <p class="text-center text-sm mt-4">
@@ -133,10 +136,15 @@ async function submitReset() {
               @keydown="onCellKeydown(i, $event)"
             />
           </div>
-          <p v-if="tacError" class="text-sm text-red-400 text-center">{{ tacError }}</p>
+          <small v-if="tacError" class="text-red-400 text-center block">{{ tacError }}</small>
 
-          <BaseInput v-model="newPassword" label="New password" type="password" placeholder="Min. 8 characters" :error="passwordError" required />
-          <BaseButton type="submit" :loading="loading" full-width>Reset password</BaseButton>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">New password</label>
+            <Password v-model="newPassword" placeholder="Min. 8 characters" :feedback="false" toggle-mask fluid :invalid="!!passwordError" />
+            <small v-if="passwordError" class="text-red-400">{{ passwordError }}</small>
+          </div>
+
+          <Button type="submit" :loading="loading" label="Reset password" fluid />
         </form>
       </div>
 

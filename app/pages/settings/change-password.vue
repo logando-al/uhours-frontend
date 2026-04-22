@@ -88,24 +88,19 @@ async function confirmPasswordChange() {
 <template>
   <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-2xl mx-auto">
     <div class="flex items-center gap-3 mb-6">
-      <button class="text-[var(--muted)] hover:text-[var(--fg)] transition-colors p-1" @click="router.push('/settings')">
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6" /></svg>
-      </button>
+      <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.push('/settings')" />
       <h1 class="text-xl font-bold">Change Password</h1>
     </div>
 
     <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
       <form v-if="step === 1" class="flex flex-col gap-3" @submit.prevent="requestPasswordChange">
-        <BaseInput
-          v-model="currentPassword"
-          label="Current password"
-          type="password"
-          placeholder="Enter current password"
-          :error="passwordError"
-          required
-        />
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-[var(--muted)]">Current password</label>
+          <Password v-model="currentPassword" placeholder="Enter current password" :feedback="false" toggle-mask fluid :invalid="!!passwordError" />
+          <small v-if="passwordError" class="text-red-400">{{ passwordError }}</small>
+        </div>
         <TurnstileWidget v-model="turnstileToken" />
-        <BaseButton type="submit" :loading="loading" full-width class="mt-1">Send code to Telegram</BaseButton>
+        <Button type="submit" :loading="loading" label="Send code to Telegram" fluid class="mt-1" />
       </form>
 
       <form v-else class="flex flex-col gap-3" @submit.prevent="confirmPasswordChange">
@@ -125,12 +120,13 @@ async function confirmPasswordChange() {
             @keydown="onCellKeydown(i, $event)"
           />
         </div>
-        <p v-if="tacError" class="text-sm text-red-400 text-center">{{ tacError }}</p>
-        <BaseInput v-model="newPassword" label="New password" type="password" placeholder="Min. 8 characters" required />
-        <BaseButton type="submit" :loading="loading" full-width>Change password</BaseButton>
-        <button type="button" class="text-sm text-[var(--muted)] text-center hover:text-[var(--fg)]" @click="step = 1">
-          Back
-        </button>
+        <small v-if="tacError" class="text-red-400 text-center block">{{ tacError }}</small>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-[var(--muted)]">New password</label>
+          <Password v-model="newPassword" placeholder="Min. 8 characters" :feedback="false" toggle-mask fluid />
+        </div>
+        <Button type="submit" :loading="loading" label="Change password" fluid />
+        <Button type="button" label="Back" text severity="secondary" fluid @click="step = 1" />
       </form>
     </section>
 
@@ -146,6 +142,5 @@ async function confirmPasswordChange() {
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
 }
-
 .animate-shake { animation: shake 0.5s ease-in-out; }
 </style>

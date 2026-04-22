@@ -46,8 +46,12 @@ const autoLoading = ref(false)
 
 const rows = ref<SpreadsheetRow[]>([newRow()])
 const saveLoading = ref(false)
-
 const activities = ref<string[]>([])
+
+const batchTabs = [
+  { key: 'auto' as BatchTab, label: 'Auto-Generate' },
+  { key: 'spreadsheet' as BatchTab, label: 'Spreadsheet' },
+]
 
 const semesterOptions = computed(() =>
   semesters.value.map(semester => ({
@@ -63,39 +67,34 @@ const subjectOptions = computed(() =>
   })),
 )
 
+const activityOptions = computed(() =>
+  activities.value.map(a => ({ value: a, label: a })),
+)
+
+const rowSubjectOptions = computed(() => [
+  { value: '', label: 'No subject' },
+  ...subjects.value.map(s => ({ value: s.id, label: s.subject_name })),
+])
+
 function newRow(): SpreadsheetRow {
-  return {
-    date: new Date().toISOString().slice(0, 10),
-    start_time: '',
-    end_time: '',
-    activity: '',
-    lecturer_name: '',
-    subject_id: '',
-  }
+  return { date: new Date().toISOString().slice(0, 10), start_time: '', end_time: '', activity: '', lecturer_name: '', subject_id: '' }
 }
 
 async function loadSemesters() {
   const data = await apiFetch<Semester[]>('/semesters')
   semesters.value = data ?? []
-  selectedSemesterId.value = semesters.value.find(semester => semester.is_active)?.id ?? semesters.value[0]?.id ?? ''
+  selectedSemesterId.value = semesters.value.find(s => s.is_active)?.id ?? semesters.value[0]?.id ?? ''
 }
 
 async function loadSubjects() {
-  if (!selectedSemesterId.value) {
-    subjects.value = []
-    return
-  }
-
+  if (!selectedSemesterId.value) { subjects.value = []; return }
   const data = await apiFetch<Subject[]>(`/subjects?semester_id=${selectedSemesterId.value}`)
   subjects.value = data ?? []
 }
 
 onMounted(async () => {
   try {
-    const [, activityData] = await Promise.all([
-      loadSemesters(),
-      apiFetch<string[]>('/config/activities'),
-    ])
+    const [, activityData] = await Promise.all([loadSemesters(), apiFetch<string[]>('/config/activities')])
     activities.value = activityData ?? []
     await loadSubjects()
   } catch {
@@ -118,30 +117,22 @@ const DAY_MAP: Record<string, number> = {
 
 function generatePreview() {
   if (!autoSubjectId.value || !autoDateFrom.value || !autoDateTo.value) return
-
-  const subject = subjects.value.find(item => item.id === autoSubjectId.value)
+  const subject = subjects.value.find(s => s.id === autoSubjectId.value)
   if (!subject) return
-
   const targetDay = DAY_MAP[subject.day_of_week.toLowerCase()]
   const from = new Date(autoDateFrom.value)
   const to = new Date(autoDateTo.value)
   const results: typeof autoPreview.value = []
   const cursor = new Date(from)
-
   while (cursor <= to) {
     if (cursor.getDay() === targetDay) {
-      const [startHour, startMinute] = subject.start_time.split(':').map(Number)
-      const [endHour, endMinute] = subject.end_time.split(':').map(Number)
-      const hours = ((endHour * 60 + endMinute) - (startHour * 60 + startMinute)) / 60
-      results.push({
-        date: cursor.toISOString().slice(0, 10),
-        selected: true,
-        hours: hours.toFixed(2),
-      })
+      const [sh, sm] = subject.start_time.split(':').map(Number)
+      const [eh, em] = subject.end_time.split(':').map(Number)
+      const hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60
+      results.push({ date: cursor.toISOString().slice(0, 10), selected: true, hours: hours.toFixed(2) })
     }
     cursor.setDate(cursor.getDate() + 1)
   }
-
   autoPreview.value = results
 }
 
@@ -157,8 +148,7 @@ async function confirmAutoGenerate() {
     toast.error('Select a semester, subject, and date range')
     return
   }
-
-  const skipDates = autoPreview.value.filter(row => !row.selected).map(row => row.date)
+  const skipDates = autoPreview.value.filter(r => !r.selected).map(r => r.date)
   autoLoading.value = true
   try {
     const result = await apiFetch<{ created: number }>('/logs/generate', {
@@ -171,7 +161,7 @@ async function confirmAutoGenerate() {
         skip_dates: skipDates,
       }),
     })
-    toast.success(`${result?.created ?? autoPreview.value.filter(row => row.selected).length} entries created`)
+    toast.success(`${result?.created ?? autoPreview.value.filter(r => r.selected).length} entries created`)
     router.push('/log')
   } catch {
     toast.error('Failed to generate entries')
@@ -180,54 +170,42 @@ async function confirmAutoGenerate() {
   }
 }
 
-function addRow() {
-  rows.value.push(newRow())
-}
-
-function removeRow(index: number) {
-  rows.value.splice(index, 1)
-}
+function addRow() { rows.value.push(newRow()) }
+function removeRow(index: number) { rows.value.splice(index, 1) }
 
 function rowHours(row: SpreadsheetRow) {
   if (!row.start_time || !row.end_time) return ''
-  const [startHour, startMinute] = row.start_time.split(':').map(Number)
-  const [endHour, endMinute] = row.end_time.split(':').map(Number)
-  const minutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+  const [sh, sm] = row.start_time.split(':').map(Number)
+  const [eh, em] = row.end_time.split(':').map(Number)
+  const minutes = (eh * 60 + em) - (sh * 60 + sm)
   if (minutes <= 0) return ''
   return (minutes / 60).toFixed(2) + 'h'
 }
 
+const validRowCount = computed(() =>
+  rows.value.filter(r => r.date && r.start_time && r.end_time && r.activity && r.lecturer_name).length,
+)
+
 async function saveAll() {
-  if (!selectedSemesterId.value) {
-    toast.error('Select a semester first')
-    return
-  }
-
-  const valid = rows.value.filter(row => row.date && row.start_time && row.end_time && row.activity && row.lecturer_name)
-  if (!valid.length) {
-    toast.error('Fill in at least one complete row')
-    return
-  }
-
+  if (!selectedSemesterId.value) { toast.error('Select a semester first'); return }
+  if (!validRowCount.value) { toast.error('Fill in at least one complete row'); return }
   saveLoading.value = true
   try {
-    const entries = valid.map(row => ({
-      subject_id: row.subject_id || undefined,
-      log_date: row.date,
-      start_time: row.start_time,
-      end_time: row.end_time,
-      activity: row.activity,
-      lecturer_name: row.lecturer_name,
-    }))
-
+    const entries = rows.value
+      .filter(r => r.date && r.start_time && r.end_time && r.activity && r.lecturer_name)
+      .map(r => ({
+        subject_id: r.subject_id || undefined,
+        log_date: r.date,
+        start_time: r.start_time,
+        end_time: r.end_time,
+        activity: r.activity,
+        lecturer_name: r.lecturer_name,
+      }))
     const result = await apiFetch<{ created: number }>('/logs/batch', {
       method: 'POST',
-      body: JSON.stringify({
-        semester_id: selectedSemesterId.value,
-        entries,
-      }),
+      body: JSON.stringify({ semester_id: selectedSemesterId.value, entries }),
     })
-    toast.success(`${result?.created ?? valid.length} entries saved`)
+    toast.success(`${result?.created ?? validRowCount.value} entries saved`)
     router.push('/log')
   } catch {
     toast.error('Failed to save batch')
@@ -240,33 +218,35 @@ async function saveAll() {
 <template>
   <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <div class="flex items-center gap-3 mb-5">
-      <button class="text-[var(--muted)] hover:text-[var(--fg)] p-1" @click="router.back()">
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6" /></svg>
-      </button>
+      <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.back()" />
       <h1 class="text-xl font-bold">Batch Log</h1>
     </div>
 
     <div v-if="pageLoading" class="flex justify-center py-12">
-      <div class="w-8 h-8 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+      <ProgressSpinner stroke-width="3" />
     </div>
 
     <template v-else>
-      <BaseSelect v-if="semesterOptions.length" v-model="selectedSemesterId" label="Semester" :options="semesterOptions" class="mb-4" />
-
-      <div class="flex gap-1 bg-[var(--bg-card)] p-1 rounded-xl mb-5 border border-[var(--border)]">
-        <button
-          v-for="tab in [{ key: 'auto', label: 'Auto-Generate' }, { key: 'spreadsheet', label: 'Spreadsheet' }] as const"
-          :key="tab.key"
-          class="flex-1 py-2 text-sm font-medium rounded-lg transition-all"
-          :class="activeTab === tab.key ? 'bg-[var(--accent)] text-white' : 'text-[var(--muted)] hover:text-[var(--fg)]'"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
+      <div v-if="semesterOptions.length" class="flex flex-col gap-1 mb-4">
+        <label class="text-sm font-medium text-[var(--muted)]">Semester</label>
+        <Select v-model="selectedSemesterId" :options="semesterOptions" option-label="label" option-value="value" class="w-full" />
       </div>
 
+      <SelectButton
+        v-model="activeTab"
+        :options="batchTabs"
+        option-label="label"
+        option-value="key"
+        class="w-full mb-5"
+      />
+
+      <!-- Auto-Generate tab -->
       <div v-if="activeTab === 'auto'" class="flex flex-col gap-4">
-        <BaseSelect v-model="autoSubjectId" label="TA Subject" :options="subjectOptions" placeholder="Select subject" />
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-[var(--muted)]">TA Subject</label>
+          <Select v-model="autoSubjectId" :options="subjectOptions" option-label="label" option-value="value" placeholder="Select subject" class="w-full" />
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium text-[var(--muted)]">From</label>
@@ -280,32 +260,35 @@ async function saveAll() {
 
         <div v-if="autoPreview.length" class="bg-[var(--bg-card)] rounded-xl border border-[var(--border)] overflow-hidden">
           <div class="px-4 py-3 border-b border-[var(--border)] flex justify-between items-center">
-            <span class="text-sm font-semibold">Preview ({{ autoPreview.filter(row => row.selected).length }} selected)</span>
-            <button class="text-xs text-[var(--accent)] hover:underline" @click="autoPreview.forEach(row => row.selected = !autoPreview.every(item => item.selected))">
-              Toggle all
-            </button>
+            <span class="text-sm font-semibold">Preview ({{ autoPreview.filter(r => r.selected).length }} selected)</span>
+            <Button
+              label="Toggle all"
+              text
+              size="small"
+              @click="autoPreview.forEach(r => r.selected = !autoPreview.every(i => i.selected))"
+            />
           </div>
           <div v-for="(row, index) in autoPreview" :key="index" class="flex items-center px-4 py-2.5 border-b border-[var(--border)] last:border-0 gap-3">
-            <input v-model="row.selected" type="checkbox" class="w-4 h-4 accent-[var(--accent)]" />
+            <Checkbox v-model="row.selected" :binary="true" />
             <span class="text-sm flex-1" :class="!row.selected ? 'text-[var(--muted)] line-through' : ''">{{ formatPreviewDate(row.date) }}</span>
             <span class="text-xs text-[var(--muted)]">{{ row.hours }}h</span>
           </div>
         </div>
 
-        <div v-else-if="autoSubjectId && autoDateFrom && autoDateTo" class="text-sm text-center text-[var(--muted)] py-4">
+        <p v-else-if="autoSubjectId && autoDateFrom && autoDateTo" class="text-sm text-center text-[var(--muted)] py-4">
           No matching dates in range
-        </div>
+        </p>
 
-        <BaseButton
+        <Button
           v-if="autoPreview.length"
           :loading="autoLoading"
-          full-width
+          :label="`Generate ${autoPreview.filter(r => r.selected).length} entries`"
+          fluid
           @click="confirmAutoGenerate"
-        >
-          Generate {{ autoPreview.filter(row => row.selected).length }} entries
-        </BaseButton>
+        />
       </div>
 
+      <!-- Spreadsheet tab -->
       <div v-else class="flex flex-col gap-3">
         <div
           v-for="(row, index) in rows"
@@ -316,44 +299,70 @@ async function saveAll() {
             <span class="text-xs font-semibold text-[var(--muted)]">Row {{ index + 1 }}</span>
             <div class="flex items-center gap-2">
               <span v-if="rowHours(row)" class="text-xs text-[var(--accent)]">{{ rowHours(row) }}</span>
-              <button v-if="rows.length > 1" class="text-[var(--muted)] hover:text-red-400 p-1" @click="removeRow(index)">
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
+              <Button
+                v-if="rows.length > 1"
+                icon="pi pi-times"
+                text
+                severity="danger"
+                size="small"
+                @click="removeRow(index)"
+              />
             </div>
           </div>
 
-          <!-- Field order mirrors UCampus: Date → Start → End → Activity → Lecturer [→ Subject] -->
+          <!-- Field order mirrors UCampus: Date → Start → End → Activity → Lecturer → Subject -->
           <div class="grid grid-cols-3 gap-2 mb-2">
-            <div class="flex flex-col gap-1 col-span-3">
-              <input v-model="row.date" type="date" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
-            </div>
-            <input v-model="row.start_time" type="time" placeholder="Start" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
-            <input v-model="row.end_time" type="time" placeholder="End" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
-            <select v-model="row.activity" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm">
-              <option value="">Activity</option>
-              <option v-for="activity in activities" :key="activity" :value="activity">{{ activity }}</option>
-            </select>
-            <input v-model="row.lecturer_name" placeholder="Lecturer" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
-            <select v-model="row.subject_id" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm">
-              <option value="">No subject</option>
-              <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.subject_name }}</option>
-            </select>
+            <input
+              v-model="row.date"
+              type="date"
+              class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm"
+            />
+            <input
+              v-model="row.start_time"
+              type="time"
+              placeholder="Start"
+              class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm"
+            />
+            <input
+              v-model="row.end_time"
+              type="time"
+              placeholder="End"
+              class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm"
+            />
+            <Select
+              v-model="row.activity"
+              :options="activityOptions"
+              option-label="label"
+              option-value="value"
+              placeholder="Activity"
+              size="small"
+              class="text-sm"
+            />
+            <input
+              v-model="row.lecturer_name"
+              placeholder="Lecturer"
+              class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm"
+            />
+            <Select
+              v-model="row.subject_id"
+              :options="rowSubjectOptions"
+              option-label="label"
+              option-value="value"
+              size="small"
+              class="col-span-3 text-sm"
+            />
           </div>
         </div>
 
-        <button
-          class="flex items-center gap-2 text-sm text-[var(--accent)] hover:underline justify-center py-2"
-          @click="addRow"
-        >
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Add row
-        </button>
+        <Button label="Add row" icon="pi pi-plus" text @click="addRow" />
 
-        <BaseButton :loading="saveLoading" full-width @click="saveAll">
-          Save all ({{ rows.filter(row => row.date && row.start_time && row.end_time && row.activity && row.lecturer_name).length }} valid)
-        </BaseButton>
+        <Button
+          :loading="saveLoading"
+          :label="`Save all (${validRowCount} valid)`"
+          fluid
+          @click="saveAll"
+        />
       </div>
     </template>
-
   </div>
 </template>

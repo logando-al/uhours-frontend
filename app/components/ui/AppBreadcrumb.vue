@@ -11,26 +11,28 @@ const LABELS: Record<string, string> = {
   'change-password': 'Change Password',
 }
 
-const crumbs = computed(() => {
+const items = computed(() => {
   const segments = route.path.split('/').filter(Boolean)
-  return segments.map((seg, i) => ({
-    label: LABELS[seg] ?? (seg.charAt(0).toUpperCase() + seg.slice(1)),
-    to: '/' + segments.slice(0, i + 1).join('/'),
-    last: i === segments.length - 1,
-  }))
+  return segments.map((seg, i) => {
+    const isLast = i === segments.length - 1
+    return {
+      label: LABELS[seg] ?? (seg.charAt(0).toUpperCase() + seg.slice(1)),
+      route: isLast ? undefined : '/' + segments.slice(0, i + 1).join('/'),
+    }
+  })
 })
 </script>
 
 <template>
-  <nav class="flex items-center gap-1 text-sm">
-    <template v-for="(crumb, i) in crumbs" :key="crumb.to">
-      <span v-if="i > 0" class="text-[var(--muted)] mx-0.5">/</span>
-      <NuxtLink
-        v-if="!crumb.last"
-        :to="crumb.to"
-        class="text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
-      >{{ crumb.label }}</NuxtLink>
-      <span v-else class="font-semibold text-[var(--fg)]">{{ crumb.label }}</span>
-    </template>
-  </nav>
+  <Breadcrumb
+    :model="items"
+    :pt="{
+      root: { class: '!bg-transparent !border-none !p-0 !rounded-none' },
+      list: { class: 'flex items-center gap-1 text-sm' },
+      item: { class: 'flex items-center' },
+      itemLink: { class: 'text-[var(--muted)] hover:text-[var(--fg)] transition-colors' },
+      itemLabel: { class: 'text-[var(--muted)] hover:text-[var(--fg)]' },
+      separator: { class: 'text-[var(--muted)] mx-0.5' },
+    }"
+  />
 </template>

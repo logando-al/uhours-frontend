@@ -75,13 +75,22 @@ async function submit() {
         <h2 class="text-lg font-semibold mb-5">Sign in</h2>
 
         <form class="flex flex-col gap-4" @submit.prevent="submit">
-          <BaseInput v-model="form.username" label="Username" placeholder="your_username" :error="errors.username" required />
-          <BaseInput v-model="form.password" label="Password" type="password" placeholder="Your password" :error="errors.password" required />
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Username</label>
+            <InputText v-model="form.username" placeholder="your_username" fluid :invalid="!!errors.username" />
+            <small v-if="errors.username" class="text-red-400">{{ errors.username }}</small>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Password</label>
+            <Password v-model="form.password" placeholder="Your password" :feedback="false" toggle-mask fluid :invalid="!!errors.password" />
+            <small v-if="errors.password" class="text-red-400">{{ errors.password }}</small>
+          </div>
 
           <TurnstileWidget v-model="form.turnstileToken" />
-          <p v-if="errors.turnstile" class="text-sm text-red-400 text-center">{{ errors.turnstile }}</p>
+          <small v-if="errors.turnstile" class="text-red-400 text-center block">{{ errors.turnstile }}</small>
 
-          <BaseButton type="submit" :loading="loading" full-width class="mt-1">Sign in</BaseButton>
+          <Button type="submit" :loading="loading" label="Sign in" fluid class="mt-1" />
         </form>
 
         <div class="flex justify-between text-sm mt-4">

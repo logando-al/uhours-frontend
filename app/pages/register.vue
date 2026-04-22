@@ -9,17 +9,14 @@ const router = useRouter()
 const toast = useAppToast()
 const auth = useAuthStore()
 
-// Redirect if already authenticated
 onMounted(() => {
   auth.rehydrate()
   if (auth.isAuthenticated) router.replace('/dashboard')
 })
 
-// Step state: 1 = registration form, 2 = TAC entry
 const step = ref<1 | 2>(1)
 const loading = ref(false)
 
-// Step 1 form
 const form = reactive({
   username: '',
   password: '',
@@ -29,7 +26,6 @@ const form = reactive({
 })
 const errors = reactive<Record<string, string>>({})
 
-// Step 2 state
 const tacCells = ref<string[]>(Array(6).fill(''))
 const tacError = ref('')
 const tacShake = ref(false)
@@ -37,7 +33,6 @@ const countdown = ref(60)
 const canResend = ref(false)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-// OTP cell refs
 const cellRefs: Ref<HTMLInputElement | null>[] = Array.from({ length: 6 }, () => ref(null))
 
 function startCountdown() {
@@ -159,7 +154,6 @@ async function submitTAC() {
       cellRefs[0].value?.focus()
       return
     }
-    // Success — set auth and redirect
     auth.setAuth(data.data.access_token, data.data.user)
     showSuccess.value = true
     setTimeout(() => router.push('/dashboard'), 1200)
@@ -209,7 +203,6 @@ const showSuccess = ref(false)
   <div class="min-h-dvh flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-sm">
 
-      <!-- App name -->
       <div class="text-center mb-8">
         <h1 class="text-2xl font-bold text-[var(--fg)]">UHours</h1>
         <p class="text-sm text-[var(--muted)] mt-1">TA Hours Monitoring</p>
@@ -220,7 +213,6 @@ const showSuccess = ref(false)
         <h2 class="text-lg font-semibold mb-1">Create account</h2>
         <p class="text-sm text-[var(--muted)] mb-5">Track your TA hours with ease</p>
 
-        <!-- Telegram notice -->
         <div class="rounded-xl p-3 mb-5 text-sm border" :style="{ backgroundColor: 'var(--info-bg)', borderColor: 'var(--info-border)', color: 'var(--info-text)' }">
           <p class="font-semibold mb-1" :style="{ color: 'var(--info-strong)' }">Before you register:</p>
           <p>
@@ -233,43 +225,34 @@ const showSuccess = ref(false)
         </div>
 
         <form class="flex flex-col gap-4" @submit.prevent="submitRegistration">
-          <BaseInput
-            v-model="form.username"
-            label="Username"
-            placeholder="your_username"
-            :error="errors.username"
-            required
-          />
-          <BaseInput
-            v-model="form.password"
-            label="Password"
-            type="password"
-            placeholder="Min. 8 characters"
-            :error="errors.password"
-            required
-          />
-          <BaseInput
-            v-model="form.confirmPassword"
-            label="Confirm password"
-            type="password"
-            placeholder="Retype your password"
-            :error="errors.confirmPassword"
-            required
-          />
-          <BaseInput
-            v-model="form.telegramUsername"
-            label="Telegram username"
-            placeholder="@your_handle"
-            :error="errors.telegramUsername"
-            required
-          />
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Username</label>
+            <InputText v-model="form.username" placeholder="your_username" fluid :invalid="!!errors.username" />
+            <small v-if="errors.username" class="text-red-400">{{ errors.username }}</small>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Password</label>
+            <Password v-model="form.password" placeholder="Min. 8 characters" :feedback="false" toggle-mask fluid :invalid="!!errors.password" />
+            <small v-if="errors.password" class="text-red-400">{{ errors.password }}</small>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Confirm password</label>
+            <Password v-model="form.confirmPassword" placeholder="Retype your password" :feedback="false" toggle-mask fluid :invalid="!!errors.confirmPassword" />
+            <small v-if="errors.confirmPassword" class="text-red-400">{{ errors.confirmPassword }}</small>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Telegram username</label>
+            <InputText v-model="form.telegramUsername" placeholder="@your_handle" fluid :invalid="!!errors.telegramUsername" />
+            <small v-if="errors.telegramUsername" class="text-red-400">{{ errors.telegramUsername }}</small>
+          </div>
 
           <TurnstileWidget v-model="form.turnstileToken" />
-          <p v-if="errors.turnstile" class="text-sm text-red-400 text-center">{{ errors.turnstile }}</p>
+          <small v-if="errors.turnstile" class="text-red-400 text-center block">{{ errors.turnstile }}</small>
 
-          <BaseButton type="submit" :loading="loading" full-width class="mt-1">
-            Register
-          </BaseButton>
+          <Button type="submit" :loading="loading" label="Register" fluid class="mt-1" />
         </form>
 
         <p class="text-center text-sm text-[var(--muted)] mt-4">
@@ -281,7 +264,6 @@ const showSuccess = ref(false)
       <!-- Step 2 — TAC Entry -->
       <div v-else-if="step === 2" class="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border)]">
 
-        <!-- Success state -->
         <Transition name="fade">
           <div v-if="showSuccess" class="text-center py-4">
             <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-3">
@@ -305,11 +287,7 @@ const showSuccess = ref(false)
             <p class="text-sm text-[var(--muted)] mt-1">Enter the 6-digit code sent to <strong>@{{ form.telegramUsername.replace('@', '') }}</strong></p>
           </div>
 
-          <!-- OTP cells -->
-          <div
-            class="flex gap-2 justify-center mb-2"
-            :class="tacShake && 'animate-shake'"
-          >
+          <div class="flex gap-2 justify-center mb-2" :class="tacShake && 'animate-shake'">
             <input
               v-for="(_, i) in tacCells"
               :key="i"
@@ -319,41 +297,23 @@ const showSuccess = ref(false)
               inputmode="numeric"
               maxlength="1"
               class="w-11 h-14 text-center text-xl font-bold rounded-xl border bg-[var(--bg)] outline-none transition-all"
-              :class="[
-                tacError
-                  ? 'border-red-500 text-red-400'
-                  : 'border-[var(--border)] focus:border-[var(--accent)] text-[var(--fg)]',
-              ]"
+              :class="[tacError ? 'border-red-500 text-red-400' : 'border-[var(--border)] focus:border-[var(--accent)] text-[var(--fg)]']"
               @input="onCellInput(i, $event)"
               @keydown="onCellKeydown(i, $event)"
               @paste="onCellPaste"
             />
           </div>
 
-          <p v-if="tacError" class="text-sm text-red-400 text-center mb-4">{{ tacError }}</p>
+          <small v-if="tacError" class="text-red-400 text-center block mb-4">{{ tacError }}</small>
 
-          <!-- Countdown -->
           <div class="text-center mb-4">
             <p v-if="!canResend" class="text-sm text-[var(--muted)]">
               Code expires in <span class="font-mono font-semibold text-[var(--fg)]">{{ countdown }}s</span>
             </p>
-            <button
-              v-else
-              class="text-sm text-[var(--accent)] hover:underline"
-              :disabled="loading"
-              @click="resendCode"
-            >
-              Resend code
-            </button>
+            <Button v-else label="Resend code" text :disabled="loading" @click="resendCode" />
           </div>
 
-          <button
-            class="text-sm text-[var(--muted)] hover:text-[var(--fg)] flex items-center gap-1 mx-auto transition-colors"
-            @click="step = 1"
-          >
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6" /></svg>
-            Back to form
-          </button>
+          <Button label="Back to form" text severity="secondary" icon="pi pi-arrow-left" icon-pos="left" class="flex mx-auto" @click="step = 1" />
         </div>
       </div>
 

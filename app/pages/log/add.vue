@@ -113,7 +113,6 @@ watch(() => form.semester_id, async semesterId => {
     subjects.value = []
     return
   }
-
   const data = await apiFetch<Subject[]>(`/subjects?semester_id=${semesterId}`)
   subjects.value = data ?? []
   if (form.subject_id && !subjects.value.some(subject => subject.id === form.subject_id)) {
@@ -144,7 +143,6 @@ async function loadData() {
         router.push('/log')
         return
       }
-
       Object.assign(form, {
         semester_id: form.semester_id,
         subject_id: entry.subject_id ?? '',
@@ -168,26 +166,11 @@ async function loadData() {
 onMounted(loadData)
 
 async function submit() {
-  if (!form.semester_id) {
-    toast.error('Select a semester')
-    return
-  }
-  if (!form.activity) {
-    toast.error('Select an activity')
-    return
-  }
-  if (!form.start_time || !form.end_time) {
-    toast.error('Enter start and end time')
-    return
-  }
-  if (!form.lecturer_name.trim()) {
-    toast.error('Enter a lecturer name')
-    return
-  }
-  if (!totalHours.value) {
-    toast.error('End time must be after start time')
-    return
-  }
+  if (!form.semester_id) { toast.error('Select a semester'); return }
+  if (!form.activity) { toast.error('Select an activity'); return }
+  if (!form.start_time || !form.end_time) { toast.error('Enter start and end time'); return }
+  if (!form.lecturer_name.trim()) { toast.error('Enter a lecturer name'); return }
+  if (!totalHours.value) { toast.error('End time must be after start time'); return }
 
   loading.value = true
   try {
@@ -211,7 +194,6 @@ async function submit() {
       await apiFetch('/logs', { method: 'POST', body: JSON.stringify(payload) })
       toast.success('Entry added')
     }
-
     router.push('/log')
   } catch {
     toast.error('Failed to save entry')
@@ -224,19 +206,24 @@ async function submit() {
 <template>
   <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-2xl mx-auto">
     <div class="flex items-center gap-3 mb-6">
-      <button class="text-[var(--muted)] hover:text-[var(--fg)] transition-colors p-1" @click="router.back()">
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6" /></svg>
-      </button>
+      <Button icon="pi pi-arrow-left" text severity="secondary" @click="router.back()" />
       <h1 class="text-xl font-bold">{{ isEdit ? 'Edit Entry' : 'Add Entry' }}</h1>
     </div>
 
     <div v-if="pageLoading" class="flex justify-center py-12">
-      <div class="w-8 h-8 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+      <ProgressSpinner stroke-width="3" />
     </div>
 
     <form v-else class="flex flex-col gap-4" @submit.prevent="submit">
-      <BaseSelect v-model="form.semester_id" label="Semester" :options="semesterOptions" />
-      <BaseSelect v-model="form.subject_id" label="Subject (optional)" :options="subjectOptions" />
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-[var(--muted)]">Semester</label>
+        <Select v-model="form.semester_id" :options="semesterOptions" option-label="label" option-value="value" class="w-full" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-[var(--muted)]">Subject (optional)</label>
+        <Select v-model="form.subject_id" :options="subjectOptions" option-label="label" option-value="value" class="w-full" />
+      </div>
 
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium text-[var(--muted)]">Date</label>
@@ -262,19 +249,33 @@ async function submit() {
         Total: {{ totalHours }} hours
       </div>
 
-      <BaseSelect v-model="form.activity" label="Activity" :options="activityOptions" placeholder="Select activity" />
-      <BaseInput v-model="form.lecturer_name" label="Lecturer" placeholder="Dr. Ahmad" />
-      <BaseInput v-model="form.notes" label="Notes (optional)" placeholder="Additional notes" />
-
-      <div class="grid grid-cols-2 gap-3">
-        <BaseSelect v-model="form.claim_status" label="Claim status" :options="claimOptions" />
-        <BaseSelect v-model="form.approval_status" label="Approval" :options="approvalOptions" />
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-[var(--muted)]">Activity</label>
+        <Select v-model="form.activity" :options="activityOptions" option-label="label" option-value="value" placeholder="Select activity" class="w-full" />
       </div>
 
-      <BaseButton type="submit" :loading="loading" full-width class="mt-2">
-        {{ isEdit ? 'Save changes' : 'Add entry' }}
-      </BaseButton>
-    </form>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-[var(--muted)]">Lecturer</label>
+        <InputText v-model="form.lecturer_name" placeholder="Dr. Ahmad" fluid />
+      </div>
 
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-[var(--muted)]">Notes (optional)</label>
+        <InputText v-model="form.notes" placeholder="Additional notes" fluid />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-[var(--muted)]">Claim status</label>
+          <Select v-model="form.claim_status" :options="claimOptions" option-label="label" option-value="value" class="w-full" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-[var(--muted)]">Approval</label>
+          <Select v-model="form.approval_status" :options="approvalOptions" option-label="label" option-value="value" class="w-full" />
+        </div>
+      </div>
+
+      <Button type="submit" :loading="loading" :label="isEdit ? 'Save changes' : 'Add entry'" fluid class="mt-2" />
+    </form>
   </div>
 </template>

@@ -43,7 +43,6 @@ const selectedSemesterId = ref<string>('')
 const selectedMonth = ref(typeof route.query.month === 'string' ? route.query.month : '')
 const semesters = ref<Semester[]>([])
 
-// Selection mode state
 const selectionMode = ref(false)
 const selectedIds = ref<Set<string>>(new Set())
 const bulkLoading = ref(false)
@@ -71,24 +70,21 @@ async function loadSemesters() {
   const data = await apiFetch<Semester[]>('/semesters')
   semesters.value = data ?? []
   if (!selectedSemesterId.value) {
-    selectedSemesterId.value = semesters.value.find(semester => semester.is_active)?.id ?? semesters.value[0]?.id ?? ''
+    selectedSemesterId.value = semesters.value.find(s => s.is_active)?.id ?? semesters.value[0]?.id ?? ''
   }
 }
 
 async function loadLogs() {
   if (!selectedSemesterId.value) return
-
   loading.value = true
   try {
     const params = new URLSearchParams({ semester_id: selectedSemesterId.value })
     if (selectedMonth.value) params.set('month', selectedMonth.value)
-
     if (activeTab.value === 'not_yet_submitted') {
       params.set('claim_status', 'not_yet_submitted')
     } else if (activeTab.value !== 'all') {
       params.set('approval_status', activeTab.value)
     }
-
     const data = await apiFetch<LogListResponse>(`/logs?${params.toString()}`)
     logs.value = data?.items ?? []
   } catch {
@@ -128,12 +124,12 @@ function formatUCampusDate(dateStr: string) {
   return `${day}/${month}/${year}`
 }
 
-function statusColor(status: string) {
-  if (status === 'approved') return 'text-green-400 bg-green-900/30'
-  if (status === 'pending') return 'text-yellow-400 bg-yellow-900/30'
-  if (status === 'rejected') return 'text-red-400 bg-red-900/30'
-  if (status === 'submitted') return 'text-blue-400 bg-blue-900/30'
-  return 'text-[var(--muted)] bg-[var(--bg)]'
+function statusSeverity(status: string): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
+  if (status === 'approved') return 'success'
+  if (status === 'pending') return 'warn'
+  if (status === 'rejected') return 'danger'
+  if (status === 'submitted') return 'info'
+  return 'secondary'
 }
 
 function enterSelectionMode() {
@@ -148,20 +144,14 @@ function exitSelectionMode() {
 
 function toggleSelect(id: string) {
   const next = new Set(selectedIds.value)
-  if (next.has(id)) {
-    next.delete(id)
-  } else {
-    next.add(id)
-  }
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
   selectedIds.value = next
 }
 
 function toggleSelectAll() {
-  if (allSelected.value) {
-    selectedIds.value = new Set()
-  } else {
-    selectedIds.value = new Set(logs.value.map(l => l.id))
-  }
+  if (allSelected.value) selectedIds.value = new Set()
+  else selectedIds.value = new Set(logs.value.map(l => l.id))
 }
 
 async function bulkUpdate(field: string, value: string) {
@@ -190,31 +180,37 @@ async function bulkUpdate(field: string, value: string) {
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-xl font-bold">Log</h1>
       <div class="flex items-center gap-2">
-        <NuxtLink
+        <Button
           v-if="!selectionMode"
+          as="router-link"
           to="/log/batch"
-          class="text-sm text-[var(--muted)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--bg-card)] border border-[var(--border)] transition-colors"
-        >
-          Batch
-        </NuxtLink>
-        <button
+          label="Batch"
+          severity="secondary"
+          outlined
+          size="small"
+        />
+        <Button
           v-if="!selectionMode && logs.length > 0"
-          class="text-sm text-[var(--accent)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent)]/10 transition-colors"
+          label="Select"
+          text
+          size="small"
           @click="enterSelectionMode"
-        >
-          Select
-        </button>
-        <button
+        />
+        <Button
           v-else-if="selectionMode"
-          class="text-sm text-[var(--muted)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
+          label="Cancel"
+          text
+          severity="secondary"
+          size="small"
           @click="exitSelectionMode"
-        >
-          Cancel
-        </button>
+        />
       </div>
     </div>
 
-    <BaseSelect v-if="semesterOptions.length" v-model="selectedSemesterId" label="Semester" :options="semesterOptions" class="mb-4" />
+    <div v-if="semesterOptions.length" class="flex flex-col gap-1 mb-4">
+      <label class="text-sm font-medium text-[var(--muted)]">Semester</label>
+      <Select v-model="selectedSemesterId" :options="semesterOptions" option-label="label" option-value="value" class="w-full" />
+    </div>
 
     <div class="mb-4">
       <label class="text-sm font-medium text-[var(--muted)] block mb-1">Month</label>
@@ -229,37 +225,32 @@ async function bulkUpdate(field: string, value: string) {
       <span class="text-sm font-medium text-[var(--accent)]">
         {{ selectedIds.size === 0 ? 'Tap entries to select' : `${selectedIds.size} selected` }}
       </span>
-      <button
-        class="text-xs font-semibold text-[var(--accent)] hover:underline"
+      <Button
+        :label="allSelected ? 'Deselect all' : 'Select all'"
+        text
+        size="small"
         @click="toggleSelectAll"
-      >
-        {{ allSelected ? 'Deselect all' : 'Select all' }}
-      </button>
+      />
     </div>
 
-    <!-- Status filter tabs (hidden in selection mode) -->
-    <div v-if="!selectionMode" class="flex gap-1 bg-[var(--bg-card)] p-1 rounded-xl mb-4 border border-[var(--border)] overflow-x-auto no-scrollbar">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg transition-all"
-        :class="activeTab === tab.key
-          ? 'bg-[var(--accent)] text-white'
-          : 'text-[var(--muted)] hover:text-[var(--fg)]'"
-        @click="activeTab = tab.key"
-      >
-        {{ tab.label }}
-      </button>
+    <!-- Status filter tabs -->
+    <div v-if="!selectionMode" class="overflow-x-auto no-scrollbar mb-4">
+      <SelectButton
+        v-model="activeTab"
+        :options="tabs"
+        option-label="label"
+        option-value="key"
+      />
     </div>
 
     <div v-if="loading" class="flex justify-center py-12">
-      <div class="w-8 h-8 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+      <ProgressSpinner stroke-width="3" />
     </div>
 
     <div v-else-if="logs.length === 0" class="text-center py-12">
-      <svg class="w-12 h-12 text-[var(--muted)] mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+      <i class="pi pi-clock text-[var(--muted)] text-4xl mb-3 block" />
       <p class="text-[var(--muted)] text-sm">No entries here yet</p>
-      <NuxtLink to="/log/add" class="text-[var(--accent)] text-sm hover:underline mt-1 inline-block">Add your first entry</NuxtLink>
+      <Button as="router-link" to="/log/add" label="Add your first entry" text class="mt-1" />
     </div>
 
     <div v-else class="flex flex-col gap-2">
@@ -273,18 +264,16 @@ async function bulkUpdate(field: string, value: string) {
         @click="selectionMode ? toggleSelect(log.id) : undefined"
       >
         <div class="flex items-start gap-3">
-          <!-- Checkbox (selection mode only) -->
-          <div
+          <!-- Checkbox in selection mode -->
+          <Checkbox
             v-if="selectionMode"
-            class="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center transition-all"
-            :class="selectedIds.has(log.id)
-              ? 'bg-[var(--accent)] border-[var(--accent)]'
-              : 'border-[var(--border)]'"
-          >
-            <svg v-if="selectedIds.has(log.id)" class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12" /></svg>
-          </div>
+            :model-value="selectedIds.has(log.id)"
+            :binary="true"
+            class="flex-shrink-0 mt-0.5"
+            @change="toggleSelect(log.id)"
+          />
 
-          <!-- Fields in UCampus order: Activity → Date → Time In/Out → Lecturer -->
+          <!-- Fields: Activity → Date → Time → Lecturer -->
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold truncate">{{ log.activity }}</p>
             <p class="text-xs text-[var(--muted)] mt-0.5 font-mono tracking-tight">
@@ -293,24 +282,35 @@ async function bulkUpdate(field: string, value: string) {
             <p class="text-xs text-[var(--muted)] mt-0.5 truncate">{{ log.lecturer_name }}<span v-if="log.subject_name"> &nbsp;·&nbsp; {{ log.subject_name }}</span></p>
           </div>
 
-          <div v-if="!selectionMode" class="flex items-center gap-2 flex-shrink-0">
-            <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="statusColor(activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status)">
-              {{ activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status }}
-            </span>
-            <NuxtLink :to="`/log/add?edit=${log.id}&semester_id=${selectedSemesterId}`" class="text-[var(--muted)] hover:text-[var(--fg)] transition-colors p-1">
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-            </NuxtLink>
-            <button class="text-[var(--muted)] hover:text-red-400 transition-colors p-1" @click="deleteLog(log.id)">
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-            </button>
+          <div v-if="!selectionMode" class="flex items-center gap-1 flex-shrink-0">
+            <Tag
+              :severity="statusSeverity(activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status)"
+              :value="activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status"
+              class="text-xs"
+            />
+            <Button
+              as="router-link"
+              :to="`/log/add?edit=${log.id}&semester_id=${selectedSemesterId}`"
+              icon="pi pi-pencil"
+              text
+              severity="secondary"
+              size="small"
+            />
+            <Button
+              icon="pi pi-trash"
+              text
+              severity="danger"
+              size="small"
+              @click.stop="deleteLog(log.id)"
+            />
           </div>
 
-          <!-- Status badge in selection mode -->
-          <span
+          <Tag
             v-else
-            class="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
-            :class="statusColor(log.approval_status)"
-          >{{ log.approval_status }}</span>
+            :severity="statusSeverity(log.approval_status)"
+            :value="log.approval_status"
+            class="text-xs flex-shrink-0"
+          />
         </div>
       </div>
     </div>
@@ -329,23 +329,34 @@ async function bulkUpdate(field: string, value: string) {
         class="fixed bottom-[calc(max(1.5rem,env(safe-area-inset-bottom))+5.5rem)] left-4 right-4 max-w-[416px] md:max-w-[calc(48rem-4rem)] mx-auto z-30"
       >
         <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl px-4 py-3 shadow-xl shadow-black/10 backdrop-blur-xl flex flex-col gap-2">
-          <p class="text-xs text-[var(--muted)] font-medium">Mark {{ selectedIds.size }} entr{{ selectedIds.size === 1 ? 'y' : 'ies' }} as:</p>
-          <div class="flex gap-2 flex-wrap">
-            <button
-              class="flex-1 min-w-0 py-2 px-3 rounded-xl text-xs font-semibold bg-green-900/30 text-green-400 hover:bg-green-900/50 transition-colors active:scale-95 touch-manipulation"
-              :disabled="bulkLoading"
+          <p class="text-xs text-[var(--muted)] font-medium">
+            Mark {{ selectedIds.size }} entr{{ selectedIds.size === 1 ? 'y' : 'ies' }} as:
+          </p>
+          <div class="flex gap-2">
+            <Button
+              label="Approved"
+              severity="success"
+              size="small"
+              :loading="bulkLoading"
+              class="flex-1"
               @click="bulkUpdate('approval_status', 'approved')"
-            >Approved</button>
-            <button
-              class="flex-1 min-w-0 py-2 px-3 rounded-xl text-xs font-semibold bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors active:scale-95 touch-manipulation"
-              :disabled="bulkLoading"
+            />
+            <Button
+              label="Rejected"
+              severity="danger"
+              size="small"
+              :loading="bulkLoading"
+              class="flex-1"
               @click="bulkUpdate('approval_status', 'rejected')"
-            >Rejected</button>
-            <button
-              class="flex-1 min-w-0 py-2 px-3 rounded-xl text-xs font-semibold bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 transition-colors active:scale-95 touch-manipulation"
-              :disabled="bulkLoading"
+            />
+            <Button
+              label="Submitted"
+              severity="info"
+              size="small"
+              :loading="bulkLoading"
+              class="flex-1"
               @click="bulkUpdate('claim_status', 'submitted')"
-            >Submitted</button>
+            />
           </div>
         </div>
       </div>

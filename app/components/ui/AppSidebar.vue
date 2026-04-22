@@ -54,15 +54,15 @@ const isActive = (path: string) => route.path.startsWith(path)
           <p class="text-sm font-medium text-[var(--fg)] truncate">{{ auth.user?.username }}</p>
           <p class="text-xs text-[var(--muted)]">Teaching Assistant</p>
         </div>
-        <button
-          class="shrink-0 text-[var(--muted)] hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-900/20"
+        <Button
+          icon="pi pi-sign-out"
+          text
+          severity="danger"
+          size="small"
           title="Sign out"
+          class="shrink-0"
           @click="logout()"
-        >
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-        </button>
+        />
       </div>
     </div>
   </aside>

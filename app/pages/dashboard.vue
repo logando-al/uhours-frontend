@@ -80,53 +80,62 @@ onMounted(async () => {
 
 <template>
   <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
+    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-xl font-bold">Dashboard</h1>
         <p class="text-sm text-[var(--muted)]">{{ auth.user?.username }}</p>
       </div>
-      <button class="md:hidden text-[var(--muted)] hover:text-[var(--fg)] transition-colors p-2" @click="logout()">
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-      </button>
+      <Button
+        class="md:hidden"
+        text
+        severity="secondary"
+        icon="pi pi-sign-out"
+        aria-label="Logout"
+        @click="logout()"
+      />
     </div>
 
-    <BaseSelect
-      v-if="semesterOptions.length"
-      v-model="activeSemesterId"
-      label="Semester"
-      :options="semesterOptions"
-      class="mb-6"
-    />
+    <!-- Semester selector -->
+    <div v-if="semesterOptions.length" class="flex flex-col gap-1 mb-6">
+      <label class="text-sm font-medium text-[var(--muted)]">Semester</label>
+      <Select
+        v-model="activeSemesterId"
+        :options="semesterOptions"
+        option-label="label"
+        option-value="value"
+        class="w-full"
+      />
+    </div>
 
+    <!-- Loading -->
     <div v-if="loading" class="flex justify-center py-12">
-      <div class="w-8 h-8 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+      <ProgressSpinner stroke-width="3" />
     </div>
 
+    <!-- Empty state -->
     <div v-else-if="!semesterOptions.length" class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] text-center">
       <h2 class="font-semibold mb-2">No semester yet</h2>
       <p class="text-sm text-[var(--muted)] mb-4">Create your first semester in Settings before logging hours.</p>
-      <NuxtLink to="/settings" class="text-[var(--accent)] font-medium hover:underline">Open Settings</NuxtLink>
+      <Button as="router-link" to="/settings" label="Open Settings" text />
     </div>
 
+    <!-- Dashboard content -->
     <template v-else-if="dashboard">
+      <!-- Hours progress card -->
       <div class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
         <div class="flex justify-between items-end mb-2">
           <span class="text-sm font-medium text-[var(--muted)]">Hours completed</span>
           <span class="text-sm font-semibold">{{ quotaPercent }}%</span>
         </div>
-        <div class="h-3 bg-[var(--bg)] rounded-full overflow-hidden mb-2">
-          <div
-            class="h-full rounded-full transition-all duration-700"
-            :class="quotaPercent >= 100 ? 'bg-green-500' : 'bg-[var(--accent)]'"
-            :style="{ width: `${quotaPercent}%` }"
-          />
-        </div>
+        <ProgressBar :value="quotaPercent" :show-value="false" class="mb-3 h-3 rounded-full" />
         <p class="text-2xl font-bold">
           {{ dashboard.total_hours }}
           <span class="text-base font-normal text-[var(--muted)]">/ {{ dashboard.quota_hours }} hrs</span>
         </p>
       </div>
 
+      <!-- Stat grid -->
       <div class="grid grid-cols-2 gap-3 mb-4">
         <div class="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
           <p class="text-xs text-[var(--muted)] mb-1">Approved</p>
@@ -146,16 +155,30 @@ onMounted(async () => {
         </div>
       </div>
 
+      <!-- Monthly breakdown -->
       <div class="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border)]">
           <h3 class="font-semibold text-sm">Monthly Breakdown</h3>
         </div>
-        <div v-if="dashboard.by_month.length === 0" class="px-4 py-8 text-center text-sm text-[var(--muted)]">No logs yet</div>
-        <div v-for="row in dashboard.by_month" :key="row.month" class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] last:border-0">
+        <div v-if="dashboard.by_month.length === 0" class="px-4 py-8 text-center text-sm text-[var(--muted)]">
+          No logs yet
+        </div>
+        <div
+          v-for="row in dashboard.by_month"
+          :key="row.month"
+          class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] last:border-0"
+        >
           <span class="text-sm">{{ row.month }}</span>
           <div class="flex items-center gap-3">
             <span class="text-sm font-semibold">{{ row.hours }}h</span>
-            <NuxtLink :to="`/log?month=${row.month}`" class="text-[var(--accent)] text-xs hover:underline">View</NuxtLink>
+            <Button
+              as="router-link"
+              :to="`/log?month=${row.month}`"
+              label="View"
+              text
+              size="small"
+              class="text-xs !p-0"
+            />
           </div>
         </div>
       </div>
