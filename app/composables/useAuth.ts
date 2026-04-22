@@ -4,11 +4,20 @@ export function useAuth() {
   const auth = useAuthStore()
   const config = useRuntimeConfig()
   const router = useRouter()
-  const toast = useToast()
 
   const baseUrl = config.public.apiBaseUrl
 
-  async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  function parseBody(text: string) {
+    if (!text) return null
+
+    try {
+      return JSON.parse(text)
+    } catch {
+      return null
+    }
+  }
+
+  async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
     const res = await fetch(`${baseUrl}${path}`, {
       ...options,
       credentials: 'include',
@@ -30,10 +39,21 @@ export function useAuth() {
       throw new Error('Session expired')
     }
 
-    const data = await res.json()
+    const text = await res.text()
+    const data = parseBody(text)
+
     if (!res.ok) {
-      throw Object.assign(new Error(data.error ?? 'Request failed'), { code: data.error, status: res.status })
+      const error = data?.error
+      throw Object.assign(new Error(error?.message ?? 'Request failed'), {
+        code: error?.code,
+        status: res.status,
+      })
     }
+
+    if (res.status === 204 || !data) {
+      return null
+    }
+
     return data.data ?? data
   }
 
@@ -45,8 +65,8 @@ export function useAuth() {
       })
       if (!res.ok) return false
       const data = await res.json()
-      if (data.data?.access_token && data.data?.user) {
-        auth.setAuth(data.data.access_token, data.data.user)
+      if (data.data?.access_token) {
+        auth.updateAccessToken(data.data.access_token)
         return true
       }
       return false

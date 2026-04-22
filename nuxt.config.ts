@@ -6,9 +6,21 @@ export default defineNuxtConfig({
   ssr: false,
   nitro: { preset: 'cloudflare_pages' },
 
-  modules: ['@pinia/nuxt', '@nuxtjs/turnstile', '@nuxtjs/tailwindcss'],
+  modules: ['@pinia/nuxt', '@nuxtjs/turnstile'],
+
+  components: [
+    { path: '~/components/ui', pathPrefix: false },
+    { path: '~/components/auth', pathPrefix: false },
+  ],
 
   css: ['~/assets/css/main.css'],
+
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
+    },
+  },
 
   turnstile: {
     siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY,

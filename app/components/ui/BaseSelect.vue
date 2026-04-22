@@ -22,7 +22,7 @@ const emit = defineEmits<{
       <select
         :value="modelValue"
         :disabled="disabled"
-        class="w-full px-4 py-3 pr-10 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] border outline-none appearance-none transition-all cursor-pointer"
+        class="w-full px-4 py-3 pr-10 rounded-xl bg-[var(--bg)] text-[var(--fg)] border outline-none appearance-none transition-all cursor-pointer"
         :class="[
           error
             ? 'border-red-500 focus:border-red-400'

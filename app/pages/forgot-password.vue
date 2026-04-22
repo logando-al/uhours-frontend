@@ -27,11 +27,15 @@ async function submitForgot() {
   if (!turnstileToken.value) { toast.error('Please complete the verification'); return }
   loading.value = true
   try {
-    await fetch(`${config.public.apiBaseUrl}/auth/forgot-password`, {
+    const res = await fetch(`${config.public.apiBaseUrl}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: username.value.trim(), turnstile_token: turnstileToken.value }),
     })
+    if (!res.ok) {
+      toast.error('Verification failed. Please try again.')
+      return
+    }
     // Always show step 2 (do not reveal if user exists)
     step.value = 2
     await nextTick()
@@ -98,7 +102,7 @@ async function submitReset() {
 
         <form class="flex flex-col gap-4" @submit.prevent="submitForgot">
           <BaseInput v-model="username" label="Username" placeholder="your_username" :error="usernameError" required />
-          <TurnstileWidget @verified="turnstileToken = $event" @error="turnstileToken = ''" />
+          <TurnstileWidget v-model="turnstileToken" />
           <BaseButton type="submit" :loading="loading" full-width class="mt-1">Send code</BaseButton>
         </form>
 

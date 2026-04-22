@@ -22,6 +22,7 @@ const loading = ref(false)
 const form = reactive({
   username: '',
   password: '',
+  confirmPassword: '',
   telegramUsername: '',
   turnstileToken: '',
 })
@@ -61,6 +62,8 @@ function validateStep1() {
   else if (form.username.length < 3) errors.username = 'Username must be at least 3 characters'
   if (!form.password) errors.password = 'Password is required'
   else if (form.password.length < 8) errors.password = 'Password must be at least 8 characters'
+  if (!form.confirmPassword) errors.confirmPassword = 'Please retype your password'
+  else if (form.confirmPassword !== form.password) errors.confirmPassword = 'Passwords do not match'
   if (!form.telegramUsername.trim()) errors.telegramUsername = 'Telegram username is required'
   if (!form.turnstileToken) errors.turnstile = 'Please complete the Turnstile verification'
   return Object.keys(errors).length === 0
@@ -82,12 +85,15 @@ async function submitRegistration() {
     })
     const data = await res.json()
     if (!res.ok) {
-      if (data.error === 'TELEGRAM_NOT_FOUND') {
+      const code = data?.error?.code
+      if (code === 'TELEGRAM_NOT_FOUND') {
         errors.telegramUsername = 'Bot not found — send /start to @uhours_bot first'
-      } else if (data.error === 'USERNAME_TAKEN') {
+      } else if (code === 'USERNAME_TAKEN') {
         errors.username = 'Username already taken'
+      } else if (code === 'TURNSTILE_FAILED') {
+        errors.turnstile = 'Verification failed. Please try again.'
       } else {
-        toast.error(data.error ?? 'Registration failed')
+        toast.error(data?.error?.message ?? 'Registration failed')
       }
       return
     }
@@ -214,9 +220,15 @@ const showSuccess = ref(false)
         <p class="text-sm text-[var(--muted)] mb-5">Track your TA hours with ease</p>
 
         <!-- Telegram notice -->
-        <div class="bg-blue-900/30 border border-blue-700/40 rounded-xl p-3 mb-5 text-sm text-blue-200">
-          <p class="font-medium mb-1">Before you register:</p>
-          <p>Open <a href="https://t.me/uhours_bot" target="_blank" class="underline font-medium">@uhours_bot</a> on Telegram and send <code class="bg-blue-900/50 px-1 rounded">/start</code> — the bot must know your account first.</p>
+        <div class="rounded-xl p-3 mb-5 text-sm border" :style="{ backgroundColor: 'var(--info-bg)', borderColor: 'var(--info-border)', color: 'var(--info-text)' }">
+          <p class="font-semibold mb-1" :style="{ color: 'var(--info-strong)' }">Before you register:</p>
+          <p>
+            Open
+            <a href="https://t.me/uhours_bot" target="_blank" class="underline font-semibold" :style="{ color: 'var(--accent)' }">@uhours_bot</a>
+            on Telegram and send
+            <code class="px-1.5 py-0.5 rounded font-semibold" :style="{ backgroundColor: 'var(--info-chip)', color: 'var(--info-strong)' }">/start</code>
+            so the bot can recognize your account first.
+          </p>
         </div>
 
         <form class="flex flex-col gap-4" @submit.prevent="submitRegistration">
@@ -236,6 +248,14 @@ const showSuccess = ref(false)
             required
           />
           <BaseInput
+            v-model="form.confirmPassword"
+            label="Confirm password"
+            type="password"
+            placeholder="Retype your password"
+            :error="errors.confirmPassword"
+            required
+          />
+          <BaseInput
             v-model="form.telegramUsername"
             label="Telegram username"
             placeholder="@your_handle"
@@ -243,7 +263,7 @@ const showSuccess = ref(false)
             required
           />
 
-          <TurnstileWidget @verified="form.turnstileToken = $event" @error="form.turnstileToken = ''" />
+          <TurnstileWidget v-model="form.turnstileToken" />
           <p v-if="errors.turnstile" class="text-sm text-red-400 text-center">{{ errors.turnstile }}</p>
 
           <BaseButton type="submit" :loading="loading" full-width class="mt-1">

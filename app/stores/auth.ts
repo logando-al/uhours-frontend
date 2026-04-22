@@ -31,6 +31,13 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    updateAccessToken(token: string) {
+      this.accessToken = token
+      if (import.meta.client) {
+        localStorage.setItem('uhours-token', token)
+      }
+    },
+
     clearAuth() {
       this.accessToken = null
       this.user = null

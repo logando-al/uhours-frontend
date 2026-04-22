@@ -41,7 +41,14 @@ async function submit() {
     })
     const data = await res.json()
     if (!res.ok) {
-      toast.error('Invalid username or password')
+      const code = data?.error?.code
+      if (code === 'TURNSTILE_FAILED') {
+        toast.error('Verification failed. Please try again.')
+      } else if (code === 'ACCOUNT_NOT_VERIFIED') {
+        toast.error('Your account is not verified yet. Complete the Telegram code step first.')
+      } else {
+        toast.error('Invalid username or password')
+      }
       return
     }
     auth.setAuth(data.data.access_token, data.data.user)
@@ -70,7 +77,7 @@ async function submit() {
           <BaseInput v-model="form.username" label="Username" placeholder="your_username" :error="errors.username" required />
           <BaseInput v-model="form.password" label="Password" type="password" placeholder="Your password" :error="errors.password" required />
 
-          <TurnstileWidget @verified="form.turnstileToken = $event" @error="form.turnstileToken = ''" />
+          <TurnstileWidget v-model="form.turnstileToken" />
           <p v-if="errors.turnstile" class="text-sm text-red-400 text-center">{{ errors.turnstile }}</p>
 
           <BaseButton type="submit" :loading="loading" full-width class="mt-1">Sign in</BaseButton>

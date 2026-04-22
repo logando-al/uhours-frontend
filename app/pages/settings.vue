@@ -8,110 +8,105 @@ const { theme, setTheme, init } = useTheme()
 
 onMounted(init)
 
-// Theme
 type ThemeMode = 'dark' | 'light' | 'system'
+
+interface Semester {
+  id: string
+  name: string
+  year: number
+  start_date: string
+  end_date: string
+  is_active: boolean
+}
+
+interface SemesterApi {
+  id?: string
+  name?: string
+  year?: number | string
+  start_date?: string
+  end_date?: string
+  is_active?: boolean
+  ID?: string
+  Name?: string
+  Year?: number | string
+  StartDate?: string
+  EndDate?: string
+  IsActive?: boolean
+}
+
 const themeOptions: Array<{ key: ThemeMode; label: string }> = [
   { key: 'light', label: 'Light' },
   { key: 'dark', label: 'Dark' },
   { key: 'system', label: 'System' },
 ]
 
-// Change password — step 1: verify current password + turnstile → get TAC
-// step 2: enter TAC + new password
-const pwStep = ref<1 | 2>(1)
-const pwLoading = ref(false)
-const currentPassword = ref('')
-const turnstileToken = ref('')
-const tacCells = ref<string[]>(Array(6).fill(''))
-const newPassword = ref('')
-const tacError = ref('')
-const tacShake = ref(false)
-const pwError = ref('')
-const cellRefs: Ref<HTMLInputElement | null>[] = Array.from({ length: 6 }, () => ref(null))
-
-async function requestPasswordChange() {
-  pwError.value = ''
-  if (!currentPassword.value) { pwError.value = 'Enter your current password'; return }
-  if (!turnstileToken.value) { toast.error('Complete the verification'); return }
-  pwLoading.value = true
-  try {
-    await apiFetch('/auth/change-password/request', {
-      method: 'POST',
-      body: JSON.stringify({ current_password: currentPassword.value, turnstile_token: turnstileToken.value }),
-    })
-    pwStep.value = 2
-    await nextTick()
-    cellRefs[0].value?.focus()
-  } catch {
-    pwError.value = 'Incorrect password'
-  } finally {
-    pwLoading.value = false
-  }
-}
-
-function onCellInput(index: number, event: Event) {
-  const val = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1)
-  tacCells.value[index] = val
-  if (val && index < 5) cellRefs[index + 1].value?.focus()
-}
-
-function onCellKeydown(index: number, event: KeyboardEvent) {
-  if (event.key === 'Backspace' && !tacCells.value[index] && index > 0) cellRefs[index - 1].value?.focus()
-}
-
-async function confirmPasswordChange() {
-  tacError.value = ''
-  const tac = tacCells.value.join('')
-  if (tac.length !== 6) { tacError.value = 'Enter the 6-digit code'; return }
-  if (newPassword.value.length < 8) { toast.error('New password must be at least 8 characters'); return }
-  pwLoading.value = true
-  try {
-    await apiFetch('/auth/change-password/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ tac, new_password: newPassword.value }),
-    })
-    toast.success('Password changed — please sign in again')
-    logout()
-  } catch {
-    tacError.value = 'Invalid or expired code'
-    tacShake.value = true
-    setTimeout(() => { tacShake.value = false }, 600)
-    tacCells.value = Array(6).fill('')
-  } finally {
-    pwLoading.value = false
-  }
-}
-
-// Semester management
-interface Semester {
-  id: number
-  name: string
-  is_active: boolean
-}
 const semesters = ref<Semester[]>([])
 const semesterLoading = ref(true)
-const newSemesterName = ref('')
 const semFormLoading = ref(false)
+const semesterForm = reactive({
+  name: '',
+  year: String(new Date().getFullYear()),
+  start_date: '',
+  end_date: '',
+  is_active: semesters.value.length === 0,
+})
+
+function normalizeSemester(raw: SemesterApi): Semester {
+  return {
+    id: raw.id ?? raw.ID ?? '',
+    name: raw.name ?? raw.Name ?? '',
+    year: Number(raw.year ?? raw.Year ?? new Date().getFullYear()),
+    start_date: raw.start_date ?? raw.StartDate ?? '',
+    end_date: raw.end_date ?? raw.EndDate ?? '',
+    is_active: raw.is_active ?? raw.IsActive ?? false,
+  }
+}
 
 async function loadSemesters() {
   semesterLoading.value = true
   try {
-    semesters.value = await apiFetch<Semester[]>('/semesters')
-  } catch { /* handled */ } finally {
+    const data = await apiFetch<SemesterApi[]>('/semesters')
+    semesters.value = (data ?? []).map(normalizeSemester)
+    semesterForm.is_active = semesters.value.length === 0
+  } catch {
+    toast.error('Failed to load semesters')
+  } finally {
     semesterLoading.value = false
   }
 }
 
 async function addSemester() {
-  if (!newSemesterName.value.trim()) return
+  if (!semesterForm.name.trim() || !semesterForm.start_date || !semesterForm.end_date) {
+    toast.error('Fill in the semester details first')
+    return
+  }
+
   semFormLoading.value = true
   try {
-    const created = await apiFetch<Semester>('/semesters', {
+    const created = await apiFetch<SemesterApi>('/semesters', {
       method: 'POST',
-      body: JSON.stringify({ name: newSemesterName.value.trim() }),
+      body: JSON.stringify({
+        name: semesterForm.name.trim(),
+        year: Number(semesterForm.year),
+        start_date: semesterForm.start_date,
+        end_date: semesterForm.end_date,
+        is_active: semesterForm.is_active,
+      }),
     })
-    semesters.value.push(created)
-    newSemesterName.value = ''
+
+    if (created) {
+      const normalized = normalizeSemester(created)
+      if (normalized.is_active) {
+        semesters.value.forEach(semester => { semester.is_active = false })
+      }
+      semesters.value.push(normalized)
+    }
+
+    semesterForm.name = ''
+    semesterForm.start_date = ''
+    semesterForm.end_date = ''
+    semesterForm.year = String(new Date().getFullYear())
+    semesterForm.is_active = false
     toast.success('Semester added')
   } catch {
     toast.error('Failed to add semester')
@@ -120,24 +115,37 @@ async function addSemester() {
   }
 }
 
-async function setActiveSemester(id: number) {
+async function setActiveSemester(id: string) {
   try {
-    await apiFetch(`/semesters/${id}/activate`, { method: 'PATCH' })
-    semesters.value.forEach(s => { s.is_active = s.id === id })
+    const updated = await apiFetch<SemesterApi>(`/semesters/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: true }),
+    })
+
+    semesters.value = semesters.value.map(semester => ({
+      ...semester,
+      is_active: semester.id === id,
+    }))
+
+    if (updated) {
+      const normalized = normalizeSemester(updated)
+      semesters.value = semesters.value.map(semester => semester.id === normalized.id ? normalized : semester)
+    }
+
     toast.success('Active semester updated')
   } catch {
     toast.error('Failed to update')
   }
 }
 
-async function deleteSemester(id: number) {
-  if (!confirm('Delete this semester? All associated data will be removed.')) return
+async function deleteSemester(id: string) {
+  if (!confirm('Delete this semester?')) return
   try {
     await apiFetch(`/semesters/${id}`, { method: 'DELETE' })
-    semesters.value = semesters.value.filter(s => s.id !== id)
+    semesters.value = semesters.value.filter(semester => semester.id !== id)
     toast.success('Semester deleted')
-  } catch {
-    toast.error('Failed to delete')
+  } catch (error: any) {
+    toast.error(error?.message ?? 'Failed to delete')
   }
 }
 
@@ -148,7 +156,6 @@ onMounted(loadSemesters)
   <div class="min-h-dvh pb-28 px-4 pt-6 max-w-[480px] mx-auto">
     <h1 class="text-xl font-bold mb-6">Settings</h1>
 
-    <!-- Theme -->
     <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
       <h2 class="font-semibold mb-3">Appearance</h2>
       <div class="flex gap-2">
@@ -166,84 +173,70 @@ onMounted(loadSemesters)
       </div>
     </section>
 
-    <!-- Change password -->
     <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
-      <h2 class="font-semibold mb-3">Change Password</h2>
-
-      <!-- Step 1 -->
-      <form v-if="pwStep === 1" class="flex flex-col gap-3" @submit.prevent="requestPasswordChange">
-        <BaseInput
-          v-model="currentPassword"
-          label="Current password"
-          type="password"
-          placeholder="Enter current password"
-          :error="pwError"
-          required
-        />
-        <TurnstileWidget @verified="turnstileToken = $event" @error="turnstileToken = ''" />
-        <BaseButton type="submit" :loading="pwLoading" full-width class="mt-1">Send code to Telegram</BaseButton>
-      </form>
-
-      <!-- Step 2 -->
-      <form v-else class="flex flex-col gap-3" @submit.prevent="confirmPasswordChange">
-        <p class="text-sm text-[var(--muted)]">Enter the 6-digit code sent to your Telegram</p>
-        <div class="flex gap-2 justify-center" :class="tacShake && 'animate-shake'">
-          <input
-            v-for="(_, i) in tacCells"
-            :key="i"
-            :ref="(el) => { cellRefs[i].value = el as HTMLInputElement }"
-            v-model="tacCells[i]"
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="w-10 h-12 text-center text-lg font-bold rounded-xl border bg-[var(--bg)] outline-none transition-all"
-            :class="tacError ? 'border-red-500 text-red-400' : 'border-[var(--border)] focus:border-[var(--accent)] text-[var(--fg)]'"
-            @input="onCellInput(i, $event)"
-            @keydown="onCellKeydown(i, $event)"
-          />
+      <h2 class="font-semibold mb-3">Password</h2>
+      <NuxtLink
+        to="/change-password"
+        class="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-4 text-[var(--fg)] transition-all hover:border-[var(--accent)]"
+      >
+        <div>
+          <p class="font-medium">Change password</p>
+          <p class="text-sm text-[var(--muted)] mt-1">Verify with Telegram TAC on the next screen.</p>
         </div>
-        <p v-if="tacError" class="text-sm text-red-400 text-center">{{ tacError }}</p>
-        <BaseInput v-model="newPassword" label="New password" type="password" placeholder="Min. 8 characters" required />
-        <BaseButton type="submit" :loading="pwLoading" full-width>Change password</BaseButton>
-        <button type="button" class="text-sm text-[var(--muted)] text-center hover:text-[var(--fg)]" @click="pwStep = 1">
-          Back
-        </button>
-      </form>
+        <svg class="w-5 h-5 text-[var(--muted)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </NuxtLink>
     </section>
 
-    <!-- Semester management -->
     <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
       <h2 class="font-semibold mb-3">Semesters</h2>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="col-span-2">
+          <BaseInput v-model="semesterForm.name" label="Semester name" placeholder="Jan 2026" required />
+        </div>
+        <BaseInput v-model="semesterForm.year" label="Year" type="number" />
+        <label class="flex items-end gap-2 text-sm text-[var(--muted)] pb-3">
+          <input v-model="semesterForm.is_active" type="checkbox" class="accent-[var(--accent)]" />
+          Set as active
+        </label>
+        <div>
+          <label class="text-sm font-medium text-[var(--muted)] block mb-1">Start date</label>
+          <input v-model="semesterForm.start_date" type="date" class="w-full px-4 py-3 rounded-xl bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none" />
+        </div>
+        <div>
+          <label class="text-sm font-medium text-[var(--muted)] block mb-1">End date</label>
+          <input v-model="semesterForm.end_date" type="date" class="w-full px-4 py-3 rounded-xl bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none" />
+        </div>
+      </div>
+
+      <BaseButton :loading="semFormLoading" full-width class="mb-4" @click="addSemester">Add semester</BaseButton>
 
       <div v-if="semesterLoading" class="flex justify-center py-4">
         <div class="w-6 h-6 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
       </div>
 
-      <div v-else class="flex flex-col gap-2 mb-3">
+      <div v-else class="flex flex-col gap-2">
         <div
-          v-for="sem in semesters"
-          :key="sem.id"
+          v-for="semester in semesters"
+          :key="semester.id"
           class="flex items-center gap-2 py-2 border-b border-[var(--border)] last:border-0"
         >
           <div class="flex-1">
-            <span class="text-sm font-medium">{{ sem.name }}</span>
-            <span v-if="sem.is_active" class="ml-2 text-xs text-green-400">Active</span>
+            <span class="text-sm font-medium">{{ semester.name }}</span>
+            <span v-if="semester.is_active" class="ml-2 text-xs text-green-400">Active</span>
+            <p class="text-xs text-[var(--muted)] mt-0.5">{{ semester.start_date }} → {{ semester.end_date }}</p>
           </div>
-          <button v-if="!sem.is_active" class="text-xs text-[var(--accent)] hover:underline" @click="setActiveSemester(sem.id)">Set active</button>
-          <button class="text-[var(--muted)] hover:text-red-400 p-1" @click="deleteSemester(sem.id)">
+          <button v-if="!semester.is_active" class="text-xs text-[var(--accent)] hover:underline" @click="setActiveSemester(semester.id)">Set active</button>
+          <button class="text-[var(--muted)] hover:text-red-400 p-1" @click="deleteSemester(semester.id)">
             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
           </button>
         </div>
         <p v-if="semesters.length === 0" class="text-sm text-[var(--muted)]">No semesters yet</p>
       </div>
-
-      <div class="flex gap-2">
-        <input v-model="newSemesterName" placeholder="Semester name" class="flex-1 px-3 py-2.5 rounded-xl bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" @keyup.enter="addSemester" />
-        <BaseButton :loading="semFormLoading" @click="addSemester">Add</BaseButton>
-      </div>
     </section>
 
-    <!-- Sign out -->
     <BaseButton variant="ghost" full-width class="text-red-400 hover:text-red-300" @click="logout">
       Sign out
     </BaseButton>
@@ -252,14 +245,3 @@ onMounted(loadSemesters)
     <AppToast />
   </div>
 </template>
-
-<style scoped>
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-}
-.animate-shake { animation: shake 0.5s ease-in-out; }
-</style>

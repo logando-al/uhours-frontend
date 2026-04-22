@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
-  modelValue?: string
+  modelValue?: string | number
   label?: string
   type?: string
   placeholder?: string
@@ -35,7 +35,7 @@ const inputType = computed(() => {
         :placeholder="placeholder"
         :required="required"
         :disabled="disabled"
-        class="w-full px-4 py-3 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] placeholder:text-[var(--muted)] border outline-none transition-all"
+        class="w-full px-4 py-3 rounded-xl bg-[var(--bg)] text-[var(--fg)] placeholder:text-[var(--muted)] border outline-none transition-all"
         :class="[
           error
             ? 'border-red-500 focus:border-red-400'

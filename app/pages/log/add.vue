@@ -7,22 +7,41 @@ const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 
-const editId = computed(() => route.query.edit ? Number(route.query.edit) : null)
+const editId = computed(() => typeof route.query.edit === 'string' ? route.query.edit : null)
+const editSemesterId = computed(() => typeof route.query.semester_id === 'string' ? route.query.semester_id : null)
 const isEdit = computed(() => !!editId.value)
 
 interface Subject {
-  id: number
-  name: string
+  id: string
+  subject_name: string
   day_of_week: string
   start_time: string
   end_time: string
-  lecturer: string
+  lecturer_name: string
 }
 
 interface Semester {
-  id: number
+  id: string
   name: string
   is_active: boolean
+}
+
+interface LogEntry {
+  id: string
+  semester_id?: string
+  subject_id?: string | null
+  log_date: string
+  start_time: string
+  end_time: string
+  activity: string
+  lecturer_name: string
+  notes?: string | null
+  claim_status: string
+  approval_status: string
+}
+
+interface LogListResponse {
+  items: LogEntry[]
 }
 
 const semesters = ref<Semester[]>([])
@@ -31,15 +50,15 @@ const loading = ref(false)
 const pageLoading = ref(true)
 
 const form = reactive({
-  semester_id: null as number | null,
-  subject_id: null as number | null,
-  date: new Date().toISOString().slice(0, 10),
+  semester_id: '',
+  subject_id: '',
+  log_date: new Date().toISOString().slice(0, 10),
   start_time: '',
   end_time: '',
   activity: '',
-  lecturer: '',
+  lecturer_name: '',
   notes: '',
-  claim_status: 'not_submitted',
+  claim_status: 'not_yet_submitted',
   approval_status: 'pending',
 })
 
@@ -54,9 +73,9 @@ const ACTIVITIES = [
   'Other',
 ]
 
-const activityOptions = ACTIVITIES.map(a => ({ value: a, label: a }))
+const activityOptions = ACTIVITIES.map(activity => ({ value: activity, label: activity }))
 const claimOptions = [
-  { value: 'not_submitted', label: 'Not Submitted' },
+  { value: 'not_yet_submitted', label: 'Not Submitted' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'approved', label: 'Approved' },
 ]
@@ -68,58 +87,84 @@ const approvalOptions = [
 
 const totalHours = computed(() => {
   if (!form.start_time || !form.end_time) return null
-  const [sh, sm] = form.start_time.split(':').map(Number)
-  const [eh, em] = form.end_time.split(':').map(Number)
-  const mins = (eh * 60 + em) - (sh * 60 + sm)
-  if (mins <= 0) return null
-  return (mins / 60).toFixed(2)
+  const [startHour, startMinute] = form.start_time.split(':').map(Number)
+  const [endHour, endMinute] = form.end_time.split(':').map(Number)
+  const minutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+  if (minutes <= 0) return null
+  return (minutes / 60).toFixed(2)
 })
 
 const semesterOptions = computed(() =>
-  semesters.value.map(s => ({ value: s.id, label: s.name + (s.is_active ? ' (Active)' : '') }))
+  semesters.value.map(semester => ({
+    value: semester.id,
+    label: semester.name + (semester.is_active ? ' (Active)' : ''),
+  })),
 )
+
 const subjectOptions = computed(() => [
-  { value: 0, label: '— No subject —' },
-  ...subjects.value.map(s => ({ value: s.id, label: s.name })),
+  { value: '', label: '— No subject —' },
+  ...subjects.value.map(subject => ({ value: subject.id, label: subject.subject_name })),
 ])
 
-watch(() => form.subject_id, (id) => {
+watch(() => form.subject_id, id => {
   if (!id) return
-  const subj = subjects.value.find(s => s.id === id)
-  if (subj) {
-    form.start_time = subj.start_time
-    form.end_time = subj.end_time
-    form.lecturer = subj.lecturer
+  const subject = subjects.value.find(item => item.id === id)
+  if (subject) {
+    form.start_time = subject.start_time
+    form.end_time = subject.end_time
+    form.lecturer_name = subject.lecturer_name
+  }
+})
+
+watch(() => form.semester_id, async semesterId => {
+  if (!semesterId) {
+    subjects.value = []
+    return
+  }
+
+  const data = await apiFetch<Subject[]>(`/subjects?semester_id=${semesterId}`)
+  subjects.value = data ?? []
+  if (form.subject_id && !subjects.value.some(subject => subject.id === form.subject_id)) {
+    form.subject_id = ''
   }
 })
 
 async function loadData() {
   try {
-    const [semData, subData] = await Promise.all([
-      apiFetch<Semester[]>('/semesters'),
-      apiFetch<Subject[]>('/subjects'),
-    ])
-    semesters.value = semData
-    subjects.value = subData
-    const active = semData.find(s => s.is_active)
-    form.semester_id = active?.id ?? semData[0]?.id ?? null
+    const semesterData = await apiFetch<Semester[]>('/semesters')
+    semesters.value = semesterData ?? []
+    form.semester_id = editSemesterId.value ?? semesters.value.find(semester => semester.is_active)?.id ?? semesters.value[0]?.id ?? ''
 
-    if (isEdit.value && editId.value) {
-      const entry = await apiFetch<any>(`/logs/${editId.value}`)
+    if (form.semester_id) {
+      const subjectData = await apiFetch<Subject[]>(`/subjects?semester_id=${form.semester_id}`)
+      subjects.value = subjectData ?? []
+    }
+
+    if (isEdit.value && editId.value && form.semester_id) {
+      const entryList = await apiFetch<LogListResponse>(`/logs?semester_id=${form.semester_id}`)
+      const entry = entryList?.items.find(item => item.id === editId.value)
+      if (!entry) {
+        toast.error('Unable to load the selected entry')
+        router.push('/log')
+        return
+      }
+
       Object.assign(form, {
-        semester_id: entry.semester_id,
-        subject_id: entry.subject_id ?? null,
-        date: entry.date,
+        semester_id: form.semester_id,
+        subject_id: entry.subject_id ?? '',
+        log_date: entry.log_date,
         start_time: entry.start_time,
         end_time: entry.end_time,
         activity: entry.activity,
-        lecturer: entry.lecturer,
+        lecturer_name: entry.lecturer_name,
         notes: entry.notes ?? '',
         claim_status: entry.claim_status,
         approval_status: entry.approval_status,
       })
     }
-  } catch { /* handled */ } finally {
+  } catch {
+    toast.error('Failed to load form data')
+  } finally {
     pageLoading.value = false
   }
 }
@@ -127,23 +172,50 @@ async function loadData() {
 onMounted(loadData)
 
 async function submit() {
-  if (!form.activity) { toast.error('Select an activity'); return }
-  if (!form.start_time || !form.end_time) { toast.error('Enter start and end time'); return }
-  if (!totalHours.value) { toast.error('End time must be after start time'); return }
+  if (!form.semester_id) {
+    toast.error('Select a semester')
+    return
+  }
+  if (!form.activity) {
+    toast.error('Select an activity')
+    return
+  }
+  if (!form.start_time || !form.end_time) {
+    toast.error('Enter start and end time')
+    return
+  }
+  if (!form.lecturer_name.trim()) {
+    toast.error('Enter a lecturer name')
+    return
+  }
+  if (!totalHours.value) {
+    toast.error('End time must be after start time')
+    return
+  }
+
   loading.value = true
   try {
     const payload = {
-      ...form,
+      semester_id: form.semester_id,
       subject_id: form.subject_id || undefined,
-      hours: Number(totalHours.value),
+      log_date: form.log_date,
+      start_time: form.start_time,
+      end_time: form.end_time,
+      activity: form.activity,
+      lecturer_name: form.lecturer_name.trim(),
+      notes: form.notes.trim() || undefined,
+      claim_status: form.claim_status,
+      approval_status: form.approval_status,
     }
-    if (isEdit.value) {
+
+    if (isEdit.value && editId.value) {
       await apiFetch(`/logs/${editId.value}`, { method: 'PUT', body: JSON.stringify(payload) })
       toast.success('Entry updated')
     } else {
       await apiFetch('/logs', { method: 'POST', body: JSON.stringify(payload) })
       toast.success('Entry added')
     }
+
     router.push('/log')
   } catch {
     toast.error('Failed to save entry')
@@ -173,7 +245,7 @@ async function submit() {
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium text-[var(--muted)]">Date</label>
         <input
-          v-model="form.date"
+          v-model="form.log_date"
           type="date"
           class="px-4 py-3 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none transition-all"
         />
@@ -195,7 +267,7 @@ async function submit() {
       </div>
 
       <BaseSelect v-model="form.activity" label="Activity" :options="activityOptions" placeholder="Select activity" />
-      <BaseInput v-model="form.lecturer" label="Lecturer" placeholder="Dr. Ahmad" />
+      <BaseInput v-model="form.lecturer_name" label="Lecturer" placeholder="Dr. Ahmad" />
       <BaseInput v-model="form.notes" label="Notes (optional)" placeholder="Additional notes" />
 
       <div class="grid grid-cols-2 gap-3">

@@ -1,15 +1,15 @@
 <script setup lang="ts">
+defineProps<{
+  modelValue?: string
+}>()
+
 const emit = defineEmits<{
-  verified: [token: string]
-  error: []
+  'update:modelValue': [token: string]
 }>()
 </script>
 
 <template>
   <div class="flex justify-center">
-    <NuxtTurnstile
-      @verified="emit('verified', $event)"
-      @error="emit('error')"
-    />
+    <NuxtTurnstile :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" />
   </div>
 </template>

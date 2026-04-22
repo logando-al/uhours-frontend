@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Dark mode (default) — Education Blue */
 :root {
   --bg:          #070E1C;
@@ -7,6 +11,11 @@
   --accent:      #4A8FF0;
   --accent-warm: #F5A623;
   --border:      rgba(74, 143, 240, 0.14);
+  --info-bg:     rgba(37, 99, 235, 0.16);
+  --info-border: rgba(96, 165, 250, 0.5);
+  --info-text:   #D8E7FF;
+  --info-strong: #F4F8FF;
+  --info-chip:   rgba(96, 165, 250, 0.2);
 }
 
 /* Light mode — Glassmorphism */
@@ -18,6 +27,11 @@
   --accent:      #2563EB;
   --accent-warm: #F59E0B;
   --border:      rgba(37, 99, 235, 0.12);
+  --info-bg:     #DDE8FF;
+  --info-border: #7C9BEB;
+  --info-text:   #36537F;
+  --info-strong: #1C3358;
+  --info-chip:   rgba(37, 99, 235, 0.14);
 }
 
 *,

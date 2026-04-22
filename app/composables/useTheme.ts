@@ -1,9 +1,10 @@
 type Theme = 'dark' | 'light' | 'system'
 
 const STORAGE_KEY = 'uhours-theme'
+const EXPLICIT_STORAGE_KEY = 'uhours-theme-explicit'
 
 export function useTheme() {
-  const theme = useState<Theme>('theme', () => 'dark')
+  const theme = useState<Theme>('theme', () => 'system')
   let mediaQuery: MediaQueryList | null = null
   let systemListener: ((e: MediaQueryListEvent) => void) | null = null
 
@@ -21,9 +22,8 @@ export function useTheme() {
     }
   }
 
-  function setTheme(value: Theme) {
+  function applyStoredTheme(value: Theme) {
     theme.value = value
-    localStorage.setItem(STORAGE_KEY, value)
     applyTheme(value)
 
     // Remove old system listener
@@ -42,10 +42,26 @@ export function useTheme() {
     }
   }
 
+  function setTheme(value: Theme) {
+    if (!import.meta.client) return
+    localStorage.setItem(STORAGE_KEY, value)
+    localStorage.setItem(EXPLICIT_STORAGE_KEY, 'true')
+    applyStoredTheme(value)
+  }
+
   function init() {
     if (!import.meta.client) return
-    const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? 'dark'
-    setTheme(stored)
+    const hasExplicitPreference = localStorage.getItem(EXPLICIT_STORAGE_KEY) === 'true'
+    const stored = localStorage.getItem(STORAGE_KEY)
+
+    if (hasExplicitPreference && (stored === 'dark' || stored === 'light' || stored === 'system')) {
+      applyStoredTheme(stored)
+      return
+    }
+
+    // Default behavior follows the OS theme until the user explicitly chooses one.
+    localStorage.removeItem(EXPLICIT_STORAGE_KEY)
+    applyStoredTheme('system')
   }
 
   return { theme: readonly(theme), setTheme, init }
