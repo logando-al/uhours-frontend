@@ -1,0 +1,50 @@
+/* Dark mode (default) — Education Blue */
+:root {
+  --bg:          #070E1C;
+  --bg-card:     #0C1A35;
+  --fg:          #E2EEFF;
+  --muted:       #6B8DB5;
+  --accent:      #4A8FF0;
+  --accent-warm: #F5A623;
+  --border:      rgba(74, 143, 240, 0.14);
+}
+
+/* Light mode — Glassmorphism */
+[data-theme="light"] {
+  --bg:          #EEF2FF;
+  --bg-card:     rgba(255, 255, 255, 0.65);
+  --fg:          #0D1B35;
+  --muted:       #5A7499;
+  --accent:      #2563EB;
+  --accent-warm: #F59E0B;
+  --border:      rgba(37, 99, 235, 0.12);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+}
+
+#__nuxt {
+  min-height: 100dvh;
+}
+
+/* Prevent iOS input zoom */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
