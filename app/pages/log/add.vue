@@ -46,6 +46,7 @@ interface LogListResponse {
 
 const semesters = ref<Semester[]>([])
 const subjects = ref<Subject[]>([])
+const activities = ref<string[]>([])
 const loading = ref(false)
 const pageLoading = ref(true)
 
@@ -62,18 +63,9 @@ const form = reactive({
   approval_status: 'pending',
 })
 
-const ACTIVITIES = [
-  'Tutorial',
-  'Lab session',
-  'Marking',
-  'Consultation',
-  'Invigilation',
-  'Preparation',
-  'Meeting',
-  'Other',
-]
-
-const activityOptions = ACTIVITIES.map(activity => ({ value: activity, label: activity }))
+const activityOptions = computed(() =>
+  activities.value.map(activity => ({ value: activity, label: activity })),
+)
 const claimOptions = [
   { value: 'not_yet_submitted', label: 'Not Submitted' },
   { value: 'submitted', label: 'Submitted' },
@@ -131,7 +123,11 @@ watch(() => form.semester_id, async semesterId => {
 
 async function loadData() {
   try {
-    const semesterData = await apiFetch<Semester[]>('/semesters')
+    const [semesterData, activityData] = await Promise.all([
+      apiFetch<Semester[]>('/semesters'),
+      apiFetch<string[]>('/config/activities'),
+    ])
+    activities.value = activityData ?? []
     semesters.value = semesterData ?? []
     form.semester_id = editSemesterId.value ?? semesters.value.find(semester => semester.is_active)?.id ?? semesters.value[0]?.id ?? ''
 

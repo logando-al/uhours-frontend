@@ -120,6 +120,14 @@ async function deleteLog(id: string) {
   }
 }
 
+function formatUCampusDate(dateStr: string) {
+  const date = new Date(dateStr + 'T00:00:00')
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = date.toLocaleDateString('en-MY', { month: 'short' })
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
 function statusColor(status: string) {
   if (status === 'approved') return 'text-green-400 bg-green-900/30'
   if (status === 'pending') return 'text-yellow-400 bg-yellow-900/30'
@@ -181,20 +189,29 @@ async function bulkUpdate(field: string, value: string) {
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-xl font-bold">Log</h1>
-      <button
-        v-if="!selectionMode && logs.length > 0"
-        class="text-sm text-[var(--accent)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent)]/10 transition-colors"
-        @click="enterSelectionMode"
-      >
-        Select
-      </button>
-      <button
-        v-else-if="selectionMode"
-        class="text-sm text-[var(--muted)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
-        @click="exitSelectionMode"
-      >
-        Cancel
-      </button>
+      <div class="flex items-center gap-2">
+        <NuxtLink
+          v-if="!selectionMode"
+          to="/log/batch"
+          class="text-sm text-[var(--muted)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--bg-card)] border border-[var(--border)] transition-colors"
+        >
+          Batch
+        </NuxtLink>
+        <button
+          v-if="!selectionMode && logs.length > 0"
+          class="text-sm text-[var(--accent)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent)]/10 transition-colors"
+          @click="enterSelectionMode"
+        >
+          Select
+        </button>
+        <button
+          v-else-if="selectionMode"
+          class="text-sm text-[var(--muted)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--bg-card)] transition-colors"
+          @click="exitSelectionMode"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
 
     <BaseSelect v-if="semesterOptions.length" v-model="selectedSemesterId" label="Semester" :options="semesterOptions" class="mb-4" />
@@ -267,9 +284,13 @@ async function bulkUpdate(field: string, value: string) {
             <svg v-if="selectedIds.has(log.id)" class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
 
+          <!-- Fields in UCampus order: Activity → Date → Time In/Out → Lecturer -->
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium truncate">{{ log.activity }}</p>
-            <p class="text-xs text-[var(--muted)] mt-0.5">{{ log.log_date }} · {{ log.total_hours }}h<span v-if="log.subject_name"> · {{ log.subject_name }}</span></p>
+            <p class="text-sm font-semibold truncate">{{ log.activity }}</p>
+            <p class="text-xs text-[var(--muted)] mt-0.5 font-mono tracking-tight">
+              {{ formatUCampusDate(log.log_date) }} &nbsp;·&nbsp; {{ log.start_time }} – {{ log.end_time }}
+            </p>
+            <p class="text-xs text-[var(--muted)] mt-0.5 truncate">{{ log.lecturer_name }}<span v-if="log.subject_name"> &nbsp;·&nbsp; {{ log.subject_name }}</span></p>
           </div>
 
           <div v-if="!selectionMode" class="flex items-center gap-2 flex-shrink-0">

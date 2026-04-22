@@ -47,7 +47,7 @@ const autoLoading = ref(false)
 const rows = ref<SpreadsheetRow[]>([newRow()])
 const saveLoading = ref(false)
 
-const ACTIVITIES = ['Tutorial', 'Lab session', 'Marking', 'Consultation', 'Invigilation', 'Preparation', 'Meeting', 'Other']
+const activities = ref<string[]>([])
 
 const semesterOptions = computed(() =>
   semesters.value.map(semester => ({
@@ -92,7 +92,11 @@ async function loadSubjects() {
 
 onMounted(async () => {
   try {
-    await loadSemesters()
+    const [, activityData] = await Promise.all([
+      loadSemesters(),
+      apiFetch<string[]>('/config/activities'),
+    ])
+    activities.value = activityData ?? []
     await loadSubjects()
   } catch {
     toast.error('Failed to load batch log data')
@@ -327,7 +331,7 @@ async function saveAll() {
             <input v-model="row.end_time" type="time" placeholder="End" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
             <select v-model="row.activity" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm">
               <option value="">Activity</option>
-              <option v-for="activity in ACTIVITIES" :key="activity" :value="activity">{{ activity }}</option>
+              <option v-for="activity in activities" :key="activity" :value="activity">{{ activity }}</option>
             </select>
             <input v-model="row.lecturer_name" placeholder="Lecturer" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
             <select v-model="row.subject_id" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm">
