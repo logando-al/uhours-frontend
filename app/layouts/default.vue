@@ -7,11 +7,12 @@
         <AppBreadcrumb />
       </header>
 
-      <main class="flex-1">
+      <main class="flex-1 pb-28 md:pb-0">
         <slot />
       </main>
     </div>
 
+    <AppNav />
     <AppToast />
   </div>
 </template>
