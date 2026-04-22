@@ -143,6 +143,11 @@ function generatePreview() {
 
 watch([autoSubjectId, autoDateFrom, autoDateTo], generatePreview)
 
+function formatPreviewDate(dateStr: string) {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-MY', { weekday: 'short', day: '2-digit', month: 'short' })
+}
+
 async function confirmAutoGenerate() {
   if (!selectedSemesterId.value || !autoSubjectId.value || !autoDateFrom.value || !autoDateTo.value) {
     toast.error('Select a semester, subject, and date range')
@@ -278,7 +283,7 @@ async function saveAll() {
           </div>
           <div v-for="(row, index) in autoPreview" :key="index" class="flex items-center px-4 py-2.5 border-b border-[var(--border)] last:border-0 gap-3">
             <input v-model="row.selected" type="checkbox" class="w-4 h-4 accent-[var(--accent)]" />
-            <span class="text-sm flex-1">{{ row.date }}</span>
+            <span class="text-sm flex-1" :class="!row.selected ? 'text-[var(--muted)] line-through' : ''">{{ formatPreviewDate(row.date) }}</span>
             <span class="text-xs text-[var(--muted)]">{{ row.hours }}h</span>
           </div>
         </div>
@@ -313,6 +318,7 @@ async function saveAll() {
             </div>
           </div>
 
+          <!-- Field order mirrors UCampus: Date → Start → End → Activity → Lecturer [→ Subject] -->
           <div class="grid grid-cols-3 gap-2 mb-2">
             <div class="flex flex-col gap-1 col-span-3">
               <input v-model="row.date" type="date" class="px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
@@ -323,11 +329,11 @@ async function saveAll() {
               <option value="">Activity</option>
               <option v-for="activity in ACTIVITIES" :key="activity" :value="activity">{{ activity }}</option>
             </select>
+            <input v-model="row.lecturer_name" placeholder="Lecturer" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
             <select v-model="row.subject_id" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm">
               <option value="">No subject</option>
               <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.subject_name }}</option>
             </select>
-            <input v-model="row.lecturer_name" placeholder="Lecturer" class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm" />
           </div>
         </div>
 
