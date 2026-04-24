@@ -64,6 +64,7 @@ const tabs: Array<{ key: Status; label: string }> = [
   { key: 'not_yet_submitted', label: 'Not Submitted' },
 ]
 
+
 const semesterOptions = computed(() =>
   semesters.value.map(semester => ({
     value: semester.id,
@@ -261,6 +262,7 @@ async function bulkUpdate(field: string, value: string) {
         :options="tabs"
         option-label="label"
         option-value="key"
+        class="status-tabs"
       />
     </div>
 
@@ -389,4 +391,9 @@ async function bulkUpdate(field: string, value: string) {
 <style scoped>
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Prevent wrapping on narrow screens */
+:deep(.status-tabs.p-selectbutton) { flex-wrap: nowrap; }
+:deep(.status-tabs .p-togglebutton) { white-space: nowrap; }
+
 </style>
