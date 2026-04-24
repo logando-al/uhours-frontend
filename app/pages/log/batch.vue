@@ -41,6 +41,15 @@ const pageLoading = ref(true)
 const autoSubjectId = ref<string>('')
 const autoDateFrom = ref('')
 const autoDateTo = ref('')
+
+const autoDateFromPicker = computed({
+  get: () => autoDateFrom.value ? new Date(autoDateFrom.value + 'T00:00:00') : null,
+  set: (val: Date | null) => { autoDateFrom.value = val ? val.toISOString().slice(0, 10) : '' },
+})
+const autoDateToPicker = computed({
+  get: () => autoDateTo.value ? new Date(autoDateTo.value + 'T00:00:00') : null,
+  set: (val: Date | null) => { autoDateTo.value = val ? val.toISOString().slice(0, 10) : '' },
+})
 const autoPreview = ref<Array<{ date: string; selected: boolean; hours: string }>>([])
 const autoLoading = ref(false)
 
@@ -250,11 +259,11 @@ async function saveAll() {
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium text-[var(--muted)]">From</label>
-            <input v-model="autoDateFrom" type="date" class="px-4 py-3 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none" />
+            <DatePicker v-model="autoDateFromPicker" date-format="dd/mm/yy" show-icon fluid />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium text-[var(--muted)]">To</label>
-            <input v-model="autoDateTo" type="date" class="px-4 py-3 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none" />
+            <DatePicker v-model="autoDateToPicker" date-format="dd/mm/yy" show-icon fluid />
           </div>
         </div>
 
@@ -312,10 +321,13 @@ async function saveAll() {
 
           <!-- Field order mirrors UCampus: Date → Start → End → Activity → Lecturer → Subject -->
           <div class="grid grid-cols-3 gap-2 mb-2">
-            <input
-              v-model="row.date"
-              type="date"
-              class="col-span-3 px-3 py-2 rounded-lg bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none text-sm"
+            <DatePicker
+              :model-value="row.date ? new Date(row.date + 'T00:00:00') : null"
+              date-format="dd/mm/yy"
+              show-icon
+              fluid
+              class="col-span-3"
+              @update:model-value="(val: Date | null) => { row.date = val ? val.toISOString().slice(0, 10) : '' }"
             />
             <input
               v-model="row.start_time"

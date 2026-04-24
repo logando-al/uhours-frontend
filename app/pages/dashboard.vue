@@ -160,27 +160,29 @@ onMounted(async () => {
         <div class="px-4 py-3 border-b border-[var(--border)]">
           <h3 class="font-semibold text-sm">Monthly Breakdown</h3>
         </div>
-        <div v-if="dashboard.by_month.length === 0" class="px-4 py-8 text-center text-sm text-[var(--muted)]">
-          No logs yet
-        </div>
-        <div
-          v-for="row in dashboard.by_month"
-          :key="row.month"
-          class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] last:border-0"
-        >
-          <span class="text-sm">{{ row.month }}</span>
-          <div class="flex items-center gap-3">
-            <span class="text-sm font-semibold">{{ row.hours }}h</span>
-            <Button
-              as="router-link"
-              :to="`/log?month=${row.month}`"
-              label="View"
-              text
-              size="small"
-              class="text-xs !p-0"
-            />
-          </div>
-        </div>
+        <DataTable :value="dashboard.by_month" size="small" :show-gridlines="false">
+          <template #empty>
+            <div class="text-center text-sm text-[var(--muted)] py-6">No logs yet</div>
+          </template>
+          <Column field="month" header="Month" />
+          <Column field="hours" header="Hours">
+            <template #body="{ data }">
+              <span class="font-semibold">{{ data.hours }}h</span>
+            </template>
+          </Column>
+          <Column header="">
+            <template #body="{ data }">
+              <Button
+                as="router-link"
+                :to="`/log?month=${data.month}`"
+                label="View"
+                text
+                size="small"
+                class="text-xs !p-0"
+              />
+            </template>
+          </Column>
+        </DataTable>
       </div>
     </template>
 

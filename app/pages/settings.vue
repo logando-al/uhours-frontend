@@ -52,6 +52,15 @@ const semesterForm = reactive({
   is_active: semesters.value.length === 0,
 })
 
+const startDatePicker = computed({
+  get: () => semesterForm.start_date ? new Date(semesterForm.start_date + 'T00:00:00') : null,
+  set: (val: Date | null) => { semesterForm.start_date = val ? val.toISOString().slice(0, 10) : '' },
+})
+const endDatePicker = computed({
+  get: () => semesterForm.end_date ? new Date(semesterForm.end_date + 'T00:00:00') : null,
+  set: (val: Date | null) => { semesterForm.end_date = val ? val.toISOString().slice(0, 10) : '' },
+})
+
 function normalizeSemester(raw: SemesterApi): Semester {
   return {
     id: raw.id ?? raw.ID ?? '',
@@ -201,11 +210,11 @@ onMounted(loadSemesters)
         </label>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-[var(--muted)]">Start date</label>
-          <input v-model="semesterForm.start_date" type="date" class="w-full px-4 py-3 rounded-xl bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none" />
+          <DatePicker v-model="startDatePicker" date-format="dd/mm/yy" show-icon fluid />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-[var(--muted)]">End date</label>
-          <input v-model="semesterForm.end_date" type="date" class="w-full px-4 py-3 rounded-xl bg-[var(--bg)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none" />
+          <DatePicker v-model="endDatePicker" date-format="dd/mm/yy" show-icon fluid />
         </div>
       </div>
 

@@ -42,6 +42,14 @@ const logs = ref<LogEntry[]>([])
 const loading = ref(true)
 const selectedSemesterId = ref<string>('')
 const selectedMonth = ref(typeof route.query.month === 'string' ? route.query.month : '')
+
+const selectedMonthPicker = computed({
+  get: () => selectedMonth.value ? new Date(selectedMonth.value + '-01T00:00:00') : null,
+  set: (val: Date | null) => {
+    if (!val) { selectedMonth.value = ''; return }
+    selectedMonth.value = `${val.getFullYear()}-${String(val.getMonth() + 1).padStart(2, '0')}`
+  },
+})
 const semesters = ref<Semester[]>([])
 
 const selectionMode = ref(false)
@@ -227,7 +235,7 @@ async function bulkUpdate(field: string, value: string) {
 
     <div class="mb-4">
       <label class="text-sm font-medium text-[var(--muted)] block mb-1">Month</label>
-      <input v-model="selectedMonth" type="month" class="w-full px-4 py-3 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none transition-all" />
+      <DatePicker v-model="selectedMonthPicker" view="month" date-format="MM yy" show-icon fluid />
     </div>
 
     <!-- Selection mode banner -->

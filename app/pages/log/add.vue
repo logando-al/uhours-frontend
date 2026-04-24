@@ -76,6 +76,11 @@ const approvalOptions = [
   { value: 'rejected', label: 'Rejected' },
 ]
 
+const logDatePicker = computed({
+  get: () => form.log_date ? new Date(form.log_date + 'T00:00:00') : null,
+  set: (val: Date | null) => { form.log_date = val ? val.toISOString().slice(0, 10) : '' },
+})
+
 const totalHours = computed(() => {
   if (!form.start_time || !form.end_time) return null
   const [startHour, startMinute] = form.start_time.split(':').map(Number)
@@ -226,11 +231,7 @@ async function submit() {
 
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium text-[var(--muted)]">Date</label>
-        <input
-          v-model="form.log_date"
-          type="date"
-          class="px-4 py-3 rounded-xl bg-[var(--bg-card)] text-[var(--fg)] border border-[var(--border)] focus:border-[var(--accent)] outline-none transition-all"
-        />
+        <DatePicker v-model="logDatePicker" date-format="dd/mm/yy" show-icon fluid />
       </div>
 
       <div class="grid grid-cols-2 gap-3">
