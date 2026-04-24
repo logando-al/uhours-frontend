@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth'
-
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Dashboard — UHours' })
 
-const auth = useAuthStore()
-const { apiFetch, logout } = useAuth()
+const { apiFetch } = useAuth()
 const toast = useAppToast()
 
 interface DashboardData {
@@ -82,18 +79,8 @@ onMounted(async () => {
   <div class="pb-28 md:pb-8 px-4 md:px-8 pt-6 md:pt-8 max-w-[480px] md:max-w-3xl mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-xl font-bold">Dashboard</h1>
-        <p class="text-sm text-[var(--muted)]">{{ auth.user?.username }}</p>
-      </div>
-      <Button
-        class="md:hidden"
-        text
-        severity="secondary"
-        icon="pi pi-sign-out"
-        aria-label="Logout"
-        @click="logout()"
-      />
+      <h1 class="text-xl font-bold">Dashboard</h1>
+      <AppProfile class="md:hidden" />
     </div>
 
     <!-- Semester selector -->

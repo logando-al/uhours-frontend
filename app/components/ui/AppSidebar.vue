@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth'
-
 const route = useRoute()
-const { logout } = useAuth()
-const auth = useAuthStore()
 
 const navItems = [
   { label: 'Dashboard', icon: 'grid', to: '/dashboard' },
@@ -49,21 +45,7 @@ const isActive = (path: string) => route.path.startsWith(path)
     </nav>
 
     <div class="px-4 py-4 border-t border-[var(--border)]">
-      <div class="flex items-center justify-between gap-2">
-        <div class="min-w-0">
-          <p class="text-sm font-medium text-[var(--fg)] truncate">{{ auth.user?.username }}</p>
-          <p class="text-xs text-[var(--muted)]">Teaching Assistant</p>
-        </div>
-        <Button
-          icon="pi pi-sign-out"
-          text
-          severity="danger"
-          size="small"
-          title="Sign out"
-          class="shrink-0"
-          @click="logout()"
-        />
-      </div>
+      <AppProfile />
     </div>
   </aside>
 </template>
