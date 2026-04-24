@@ -74,7 +74,16 @@ async function saveAvatar() {
   }
 }
 
+function formatDate(d: string): string {
+  if (!d) return ''
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const [y, m, day] = d.split('-')
+  return `${day}/${months[+m - 1]}/${y}`
+}
+
+const semesterPickerOpen = ref(false)
 const semesters = ref<Semester[]>([])
+const activeSemester = computed(() => semesters.value.find(s => s.is_active) ?? null)
 const semesterLoading = ref(true)
 const semFormLoading = ref(false)
 const semesterForm = reactive({
@@ -266,50 +275,72 @@ onMounted(loadSemesters)
     <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
       <h2 class="font-semibold mb-3">Semesters</h2>
 
-      <div class="grid grid-cols-2 gap-3 mb-4">
-        <div class="col-span-2 flex flex-col gap-1">
-          <label class="text-sm font-medium text-[var(--muted)]">Semester name</label>
-          <InputText v-model="semesterForm.name" placeholder="Jan 2026" fluid />
+      <button
+        class="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-4 text-[var(--fg)] transition-all hover:border-[var(--accent)] w-full text-left"
+        @click="semesterPickerOpen = !semesterPickerOpen"
+      >
+        <div>
+          <p class="font-medium">
+            <span v-if="semesterLoading" class="text-[var(--muted)]">Loading...</span>
+            <span v-else>{{ activeSemester?.name ?? 'No active semester' }}</span>
+          </p>
+          <p class="text-sm text-[var(--muted)] mt-0.5">
+            <template v-if="activeSemester">{{ formatDate(activeSemester.start_date) }} → {{ formatDate(activeSemester.end_date) }}</template>
+            <template v-else-if="!semesterLoading">Add your first semester below.</template>
+          </p>
         </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-[var(--muted)]">Year</label>
-          <InputText v-model="semesterForm.year" type="number" fluid />
-        </div>
-        <label class="flex items-end gap-2 text-sm text-[var(--muted)] pb-3 cursor-pointer">
-          <Checkbox v-model="semesterForm.is_active" :binary="true" input-id="is-active" />
-          <span>Set as active</span>
-        </label>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-[var(--muted)]">Start date</label>
-          <DatePicker v-model="startDatePicker" date-format="dd/mm/yy" show-icon fluid />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-[var(--muted)]">End date</label>
-          <DatePicker v-model="endDatePicker" date-format="dd/mm/yy" show-icon fluid />
-        </div>
-      </div>
+        <i
+          class="pi pi-chevron-down text-[var(--muted)] transition-transform duration-200"
+          :class="semesterPickerOpen ? 'rotate-180' : ''"
+        />
+      </button>
 
-      <Button :loading="semFormLoading" label="Add semester" fluid class="mb-4" @click="addSemester" />
-
-      <div v-if="semesterLoading" class="flex justify-center py-4">
-        <ProgressSpinner stroke-width="3" style="width: 28px; height: 28px;" />
-      </div>
-
-      <div v-else class="flex flex-col gap-2">
-        <div
-          v-for="semester in semesters"
-          :key="semester.id"
-          class="flex items-center gap-2 py-2 border-b border-[var(--border)] last:border-0"
-        >
-          <div class="flex-1">
-            <span class="text-sm font-medium">{{ semester.name }}</span>
-            <Tag v-if="semester.is_active" value="Active" severity="success" class="ml-2 text-xs" />
-            <p class="text-xs text-[var(--muted)] mt-0.5">{{ semester.start_date }} → {{ semester.end_date }}</p>
+      <div v-if="semesterPickerOpen" class="mt-3 flex flex-col gap-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2 flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Semester name</label>
+            <InputText v-model="semesterForm.name" placeholder="Jan 2026" fluid />
           </div>
-          <Button v-if="!semester.is_active" label="Set active" text size="small" @click="setActiveSemester(semester.id)" />
-          <Button icon="pi pi-trash" text severity="danger" size="small" @click="deleteSemester(semester.id)" />
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Year</label>
+            <InputText v-model="semesterForm.year" type="number" fluid />
+          </div>
+          <label class="flex items-end gap-2 text-sm text-[var(--muted)] pb-3 cursor-pointer">
+            <Checkbox v-model="semesterForm.is_active" :binary="true" input-id="is-active" />
+            <span>Set as active</span>
+          </label>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">Start date</label>
+            <DatePicker v-model="startDatePicker" date-format="dd/mm/yy" show-icon fluid />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-[var(--muted)]">End date</label>
+            <DatePicker v-model="endDatePicker" date-format="dd/mm/yy" show-icon fluid />
+          </div>
         </div>
-        <p v-if="semesters.length === 0" class="text-sm text-[var(--muted)]">No semesters yet</p>
+
+        <Button :loading="semFormLoading" label="Add semester" fluid @click="addSemester" />
+
+        <div v-if="semesterLoading" class="flex justify-center py-4">
+          <ProgressSpinner stroke-width="3" style="width: 28px; height: 28px;" />
+        </div>
+
+        <div v-else class="flex flex-col gap-2">
+          <div
+            v-for="semester in semesters"
+            :key="semester.id"
+            class="flex items-center gap-2 py-2 border-b border-[var(--border)] last:border-0"
+          >
+            <div class="flex-1">
+              <span class="text-sm font-medium">{{ semester.name }}</span>
+              <Tag v-if="semester.is_active" value="Active" severity="success" class="ml-2 text-xs" />
+              <p class="text-xs text-[var(--muted)] mt-0.5">{{ formatDate(semester.start_date) }} → {{ formatDate(semester.end_date) }}</p>
+            </div>
+            <Button v-if="!semester.is_active" label="Set active" text size="small" @click="setActiveSemester(semester.id)" />
+            <Button icon="pi pi-trash" text severity="danger" size="small" @click="deleteSemester(semester.id)" />
+          </div>
+          <p v-if="semesters.length === 0" class="text-sm text-[var(--muted)]">No semesters yet.</p>
+        </div>
       </div>
     </section>
 
