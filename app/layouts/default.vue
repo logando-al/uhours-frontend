@@ -14,5 +14,6 @@
 
     <AppNav />
     <AppToast />
+    <ConfirmDialog />
   </div>
 </template>

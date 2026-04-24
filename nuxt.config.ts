@@ -19,26 +19,6 @@ const UHoursPreset = definePreset(Aura, {
       950: '#172554',
     },
   },
-  colorScheme: {
-    dark: {
-      surface: {
-        0:    '#ffffff',
-        50:   '#0C1A35',
-        100:  '#0C1A35',
-        200:  '#0e1f3d',
-        300:  '#122448',
-        400:  '#1a3060',
-        500:  '#1e3a8a',
-        600:  '#254cb0',
-        700:  '#2d5fd4',
-        800:  '#4A8FF0',
-        900:  '#93c5fd',
-        950:  '#dbeafe',
-        ground:   '#070E1C',
-        section:  '#0C1A35',
-      },
-    },
-  },
 })
 
 export default defineNuxtConfig({

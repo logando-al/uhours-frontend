@@ -4,6 +4,7 @@ useHead({ title: 'Settings — UHours' })
 
 const { apiFetch, logout } = useAuth()
 const toast = useAppToast()
+const confirm = useConfirm()
 const { theme, setTheme, init } = useTheme()
 
 onMounted(init)
@@ -127,15 +128,23 @@ async function setActiveSemester(id: string) {
   }
 }
 
-async function deleteSemester(id: string) {
-  if (!confirm('Delete this semester?')) return
-  try {
-    await apiFetch(`/semesters/${id}`, { method: 'DELETE' })
-    semesters.value = semesters.value.filter(s => s.id !== id)
-    toast.success('Semester deleted')
-  } catch (error: any) {
-    toast.error(error?.message ?? 'Failed to delete')
-  }
+function deleteSemester(id: string) {
+  confirm.require({
+    message: 'Delete this semester? This action cannot be undone.',
+    header: 'Delete Semester',
+    icon: 'pi pi-trash',
+    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+    acceptProps: { label: 'Delete', severity: 'danger' },
+    accept: async () => {
+      try {
+        await apiFetch(`/semesters/${id}`, { method: 'DELETE' })
+        semesters.value = semesters.value.filter(s => s.id !== id)
+        toast.success('Semester deleted')
+      } catch (error: any) {
+        toast.error(error?.message ?? 'Failed to delete')
+      }
+    },
+  })
 }
 
 onMounted(loadSemesters)

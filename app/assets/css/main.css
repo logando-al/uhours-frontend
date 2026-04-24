@@ -2,20 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode — Education Blue (also covers initial load before JS sets data-theme) */
+/* Dark mode — Native Aura Slate */
 :root, [data-theme="dark"] {
-  --bg:          #070E1C;
-  --bg-card:     #0C1A35;
-  --fg:          #E2EEFF;
-  --muted:       #6B8DB5;
+  --bg:          #020617;
+  --bg-card:     #0f172a;
+  --fg:          #f1f5f9;
+  --muted:       #94a3b8;
   --accent:      #4A8FF0;
   --accent-warm: #F5A623;
-  --border:      rgba(74, 143, 240, 0.14);
-  --info-bg:     rgba(37, 99, 235, 0.16);
-  --info-border: rgba(96, 165, 250, 0.5);
-  --info-text:   #D8E7FF;
-  --info-strong: #F4F8FF;
-  --info-chip:   rgba(96, 165, 250, 0.2);
+  --border:      rgba(248, 250, 252, 0.08);
+  --info-bg:     rgba(74, 143, 240, 0.10);
+  --info-border: rgba(74, 143, 240, 0.25);
+  --info-text:   #cbd5e1;
+  --info-strong: #f1f5f9;
+  --info-chip:   rgba(74, 143, 240, 0.12);
 }
 
 /* Light mode — Glassmorphism */
@@ -54,6 +54,12 @@ body {
 
 #__nuxt {
   min-height: 100dvh;
+}
+
+/* Compact floating confirm dialog — prevent full-width stretch on mobile */
+.p-confirmdialog {
+  max-width: 380px;
+  width: min(380px, calc(100vw - 2rem)) !important;
 }
 
 /* Prevent iOS input zoom */

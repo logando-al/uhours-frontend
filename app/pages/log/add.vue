@@ -67,9 +67,8 @@ const activityOptions = computed(() =>
   activities.value.map(activity => ({ value: activity, label: activity })),
 )
 const claimOptions = [
-  { value: 'not_yet_submitted', label: 'Not Submitted' },
+  { value: 'not_yet_submitted', label: 'Not Yet Submitted' },
   { value: 'submitted', label: 'Submitted' },
-  { value: 'approved', label: 'Approved' },
 ]
 const approvalOptions = [
   { value: 'pending', label: 'Pending' },

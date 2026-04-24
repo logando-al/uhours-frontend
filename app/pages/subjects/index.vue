@@ -4,6 +4,7 @@ useHead({ title: 'Subjects — UHours' })
 
 const { apiFetch } = useAuth()
 const toast = useAppToast()
+const confirm = useConfirm()
 
 interface Semester {
   id: string
@@ -156,15 +157,23 @@ async function submitForm() {
   }
 }
 
-async function deleteSubject(id: string) {
-  if (!confirm('Delete this subject?')) return
-  try {
-    await apiFetch(`/subjects/${id}`, { method: 'DELETE' })
-    subjects.value = subjects.value.filter(s => s.id !== id)
-    toast.success('Subject deleted')
-  } catch {
-    toast.error('Failed to delete')
-  }
+function deleteSubject(id: string) {
+  confirm.require({
+    message: 'Delete this subject? This action cannot be undone.',
+    header: 'Delete Subject',
+    icon: 'pi pi-trash',
+    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+    acceptProps: { label: 'Delete', severity: 'danger' },
+    accept: async () => {
+      try {
+        await apiFetch(`/subjects/${id}`, { method: 'DELETE' })
+        subjects.value = subjects.value.filter(s => s.id !== id)
+        toast.success('Subject deleted')
+      } catch {
+        toast.error('Failed to delete')
+      }
+    },
+  })
 }
 
 function capitalize(value: string) {

@@ -4,6 +4,7 @@ useHead({ title: 'Log — UHours' })
 
 const { apiFetch } = useAuth()
 const toast = useAppToast()
+const confirm = useConfirm()
 const route = useRoute()
 
 type Status = 'all' | 'approved' | 'pending' | 'rejected' | 'not_yet_submitted'
@@ -105,15 +106,23 @@ onMounted(async () => {
   }
 })
 
-async function deleteLog(id: string) {
-  if (!confirm('Delete this entry?')) return
-  try {
-    await apiFetch(`/logs/${id}`, { method: 'DELETE' })
-    logs.value = logs.value.filter(log => log.id !== id)
-    toast.success('Entry deleted')
-  } catch {
-    toast.error('Failed to delete')
-  }
+function deleteLog(id: string) {
+  confirm.require({
+    message: 'Delete this entry? This action cannot be undone.',
+    header: 'Delete Entry',
+    icon: 'pi pi-trash',
+    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+    acceptProps: { label: 'Delete', severity: 'danger' },
+    accept: async () => {
+      try {
+        await apiFetch(`/logs/${id}`, { method: 'DELETE' })
+        logs.value = logs.value.filter(log => log.id !== id)
+        toast.success('Entry deleted')
+      } catch {
+        toast.error('Failed to delete')
+      }
+    },
+  })
 }
 
 function formatUCampusDate(dateStr: string) {
@@ -130,6 +139,10 @@ function statusSeverity(status: string): 'success' | 'warn' | 'danger' | 'info' 
   if (status === 'rejected') return 'danger'
   if (status === 'submitted') return 'info'
   return 'secondary'
+}
+
+function formatStatus(status: string): string {
+  return status.replace(/_/g, ' ').toUpperCase()
 }
 
 function enterSelectionMode() {
@@ -285,7 +298,7 @@ async function bulkUpdate(field: string, value: string) {
           <div v-if="!selectionMode" class="flex items-center gap-1 flex-shrink-0">
             <Tag
               :severity="statusSeverity(activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status)"
-              :value="activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status"
+              :value="formatStatus(activeTab === 'not_yet_submitted' ? log.claim_status : log.approval_status)"
               class="text-xs"
             />
             <Button
@@ -308,7 +321,7 @@ async function bulkUpdate(field: string, value: string) {
           <Tag
             v-else
             :severity="statusSeverity(log.approval_status)"
-            :value="log.approval_status"
+            :value="formatStatus(log.approval_status)"
             class="text-xs flex-shrink-0"
           />
         </div>
