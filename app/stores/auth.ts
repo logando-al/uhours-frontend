@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 interface User {
   id: number
   username: string
+  avatar?: string
 }
 
 interface AuthState {
@@ -45,6 +46,10 @@ export const useAuthStore = defineStore('auth', {
         localStorage.removeItem('uhours-token')
         localStorage.removeItem('uhours-user')
       }
+    },
+
+    setAvatar(avatar: string) {
+      if (this.user) this.user.avatar = avatar
     },
 
     rehydrate() {

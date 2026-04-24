@@ -2,7 +2,7 @@
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Settings — UHours' })
 
-const { apiFetch, logout } = useAuth()
+const { apiFetch, logout, auth } = useAuth()
 const toast = useAppToast()
 const confirm = useConfirm()
 const { theme, setTheme, init } = useTheme()
@@ -40,6 +40,39 @@ const themeOptions: Array<{ key: ThemeMode; label: string }> = [
   { key: 'dark', label: 'Dark' },
   { key: 'system', label: 'System' },
 ]
+
+const AVATARS = [
+  '🐻', '🦊', '🐧', '🦁', '🐸', '🦋',
+  '🐺', '🦄', '🐯', '🐮', '🐙', '🦅',
+  '🐬', '🦀', '🐲', '🦉', '🐼', '🦩',
+]
+const selectedAvatar = computed(() => auth.user?.avatar ?? '🐻')
+const avatarForm = ref(auth.user?.avatar ?? '🐻')
+const avatarPickerOpen = ref(false)
+const saveAvatarLoading = ref(false)
+
+function toggleAvatarPicker() {
+  avatarPickerOpen.value = !avatarPickerOpen.value
+  if (avatarPickerOpen.value) avatarForm.value = selectedAvatar.value
+}
+
+async function saveAvatar() {
+  if (!avatarForm.value.trim()) return
+  saveAvatarLoading.value = true
+  try {
+    await apiFetch('/users/me/avatar', {
+      method: 'PATCH',
+      body: JSON.stringify({ avatar: avatarForm.value }),
+    })
+    auth.setAvatar(avatarForm.value)
+    avatarPickerOpen.value = false
+    toast.success('Avatar saved')
+  } catch {
+    toast.error('Failed to save avatar')
+  } finally {
+    saveAvatarLoading.value = false
+  }
+}
 
 const semesters = ref<Semester[]>([])
 const semesterLoading = ref(true)
@@ -189,6 +222,44 @@ onMounted(loadSemesters)
         </div>
         <i class="pi pi-chevron-right text-[var(--muted)]" />
       </NuxtLink>
+    </section>
+
+    <!-- Avatar -->
+    <section class="bg-[var(--bg-card)] rounded-2xl p-5 border border-[var(--border)] mb-4">
+      <h2 class="font-semibold mb-3">Avatar</h2>
+      <button
+        class="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-4 text-[var(--fg)] transition-all hover:border-[var(--accent)] w-full text-left"
+        @click="toggleAvatarPicker"
+      >
+        <div class="flex items-center gap-3">
+          <span class="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-xl leading-none shrink-0 select-none">{{ selectedAvatar }}</span>
+          <div>
+            <p class="font-medium">Change avatar</p>
+            <p class="text-sm text-[var(--muted)] mt-0.5">Choose a preset or type any emoji.</p>
+          </div>
+        </div>
+        <i
+          class="pi pi-chevron-down text-[var(--muted)] transition-transform duration-200"
+          :class="avatarPickerOpen ? 'rotate-180' : ''"
+        />
+      </button>
+
+      <div v-if="avatarPickerOpen" class="mt-3 flex flex-col gap-3">
+        <div class="flex items-center gap-3">
+          <span class="w-12 h-12 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-2xl leading-none shrink-0 select-none">{{ avatarForm || '?' }}</span>
+          <InputText v-model="avatarForm" placeholder="Type or paste any emoji" fluid />
+        </div>
+        <div class="grid grid-cols-9 gap-1">
+          <button
+            v-for="avatar in AVATARS"
+            :key="avatar"
+            class="text-xl p-1.5 rounded-lg transition-all hover:bg-[var(--bg)] text-center cursor-pointer"
+            :class="avatarForm === avatar ? 'ring-2 ring-[var(--accent)] bg-[var(--accent)]/10' : ''"
+            @click="avatarForm = avatar"
+          >{{ avatar }}</button>
+        </div>
+        <Button label="Save avatar" fluid :loading="saveAvatarLoading" @click="saveAvatar" />
+      </div>
     </section>
 
     <!-- Semesters -->
