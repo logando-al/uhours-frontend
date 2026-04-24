@@ -2,6 +2,8 @@
 import Aura from '@primeuix/themes/aura'
 import { definePreset } from '@primeuix/themes'
 
+const isDev = process.env.NODE_ENV === 'development'
+
 // Match UHours palette: blue accent (#4A8FF0) on dark navy
 const UHoursPreset = definePreset(Aura, {
   semantic: {
@@ -27,6 +29,34 @@ export default defineNuxtConfig({
 
   ssr: false,
   nitro: { preset: 'cloudflare_pages' },
+
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+        // CSP enforced in production only — dev uses localhost:8080 which isn't in the allowlist
+        ...(!isDev && {
+          'Content-Security-Policy': [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "img-src 'self' data:",
+            "connect-src 'self' https://api.uhours.ltechnosoft.com",
+            "frame-src https://challenges.cloudflare.com",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "upgrade-insecure-requests",
+          ].join('; '),
+        }),
+      },
+    },
+  },
 
   modules: ['@pinia/nuxt', '@nuxtjs/turnstile', '@primevue/nuxt-module'],
 
