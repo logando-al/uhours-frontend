@@ -80,7 +80,9 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold">Dashboard</h1>
-      <AppProfile class="md:hidden" />
+      <div class="md:hidden">
+        <AppProfile />
+      </div>
     </div>
 
     <!-- Semester selector -->
