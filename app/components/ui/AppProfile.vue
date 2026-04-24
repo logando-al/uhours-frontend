@@ -8,6 +8,7 @@ const router = useRouter()
 const selectedAvatar = computed(() => auth.user?.avatar ?? '🐻')
 
 onMounted(async () => {
+  if (auth.user?.avatar) return
   try {
     const me = await apiFetch<{ avatar: string }>('/users/me')
     if (me?.avatar) auth.setAvatar(me.avatar)

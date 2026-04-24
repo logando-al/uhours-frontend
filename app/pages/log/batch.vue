@@ -55,7 +55,7 @@ const autoLoading = ref(false)
 
 const rows = ref<SpreadsheetRow[]>([newRow()])
 const saveLoading = ref(false)
-const activities = ref<string[]>([])
+const { activities, loadActivities } = useActivities()
 
 const batchTabs = [
   { key: 'auto' as BatchTab, label: 'Auto-Generate' },
@@ -101,11 +101,13 @@ async function loadSubjects() {
   subjects.value = data ?? []
 }
 
+const initialized = ref(false)
+
 onMounted(async () => {
   try {
-    const [, activityData] = await Promise.all([loadSemesters(), apiFetch<string[]>('/config/activities')])
-    activities.value = activityData ?? []
+    await Promise.all([loadSemesters(), loadActivities()])
     await loadSubjects()
+    initialized.value = true
   } catch {
     toast.error('Failed to load batch log data')
   } finally {
@@ -114,6 +116,7 @@ onMounted(async () => {
 })
 
 watch(selectedSemesterId, async () => {
+  if (!initialized.value) return
   await loadSubjects()
   autoSubjectId.value = ''
   autoPreview.value = []

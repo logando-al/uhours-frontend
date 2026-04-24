@@ -46,7 +46,7 @@ interface LogListResponse {
 
 const semesters = ref<Semester[]>([])
 const subjects = ref<Subject[]>([])
-const activities = ref<string[]>([])
+const { activities, loadActivities } = useActivities()
 const loading = ref(false)
 const pageLoading = ref(true)
 
@@ -126,39 +126,42 @@ watch(() => form.semester_id, async semesterId => {
 
 async function loadData() {
   try {
-    const [semesterData, activityData] = await Promise.all([
+    const [semesterData] = await Promise.all([
       apiFetch<Semester[]>('/semesters'),
-      apiFetch<string[]>('/config/activities'),
+      loadActivities(),
     ])
-    activities.value = activityData ?? []
     semesters.value = semesterData ?? []
     form.semester_id = editSemesterId.value ?? semesters.value.find(semester => semester.is_active)?.id ?? semesters.value[0]?.id ?? ''
 
     if (form.semester_id) {
-      const subjectData = await apiFetch<Subject[]>(`/subjects?semester_id=${form.semester_id}`)
+      const [subjectData, entryList] = await Promise.all([
+        apiFetch<Subject[]>(`/subjects?semester_id=${form.semester_id}`),
+        isEdit.value && editId.value
+          ? apiFetch<LogListResponse>(`/logs?semester_id=${form.semester_id}`)
+          : Promise.resolve(null),
+      ])
       subjects.value = subjectData ?? []
-    }
 
-    if (isEdit.value && editId.value && form.semester_id) {
-      const entryList = await apiFetch<LogListResponse>(`/logs?semester_id=${form.semester_id}`)
-      const entry = entryList?.items.find(item => item.id === editId.value)
-      if (!entry) {
-        toast.error('Unable to load the selected entry')
-        router.push('/log')
-        return
+      if (isEdit.value && editId.value) {
+        const entry = entryList?.items.find(item => item.id === editId.value)
+        if (!entry) {
+          toast.error('Unable to load the selected entry')
+          router.push('/log')
+          return
+        }
+        Object.assign(form, {
+          semester_id: form.semester_id,
+          subject_id: entry.subject_id ?? '',
+          log_date: entry.log_date,
+          start_time: entry.start_time,
+          end_time: entry.end_time,
+          activity: entry.activity,
+          lecturer_name: entry.lecturer_name,
+          notes: entry.notes ?? '',
+          claim_status: entry.claim_status,
+          approval_status: entry.approval_status,
+        })
       }
-      Object.assign(form, {
-        semester_id: form.semester_id,
-        subject_id: entry.subject_id ?? '',
-        log_date: entry.log_date,
-        start_time: entry.start_time,
-        end_time: entry.end_time,
-        activity: entry.activity,
-        lecturer_name: entry.lecturer_name,
-        notes: entry.notes ?? '',
-        claim_status: entry.claim_status,
-        approval_status: entry.approval_status,
-      })
     }
   } catch {
     toast.error('Failed to load form data')

@@ -109,7 +109,7 @@ watch([activeTab, selectedSemesterId, selectedMonth], loadLogs)
 onMounted(async () => {
   try {
     await loadSemesters()
-    await loadLogs()
+    // watcher on selectedSemesterId fires loadLogs() automatically
   } catch {
     loading.value = false
   }
