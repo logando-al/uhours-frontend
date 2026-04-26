@@ -8,6 +8,7 @@ onMounted(() => {
 
 <template>
   <div>
+    <VitePwaManifest />
     <NuxtRouteAnnouncer />
     <NuxtLayout>
       <NuxtPage />

@@ -46,6 +46,8 @@ export default defineNuxtConfig({
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data:",
+            "manifest-src 'self'",
+            "worker-src 'self'",
             "connect-src 'self' https://uhours-api.ltechnosoft.com https://cloudflareinsights.com",
             "frame-src https://challenges.cloudflare.com",
             "object-src 'none'",
@@ -58,7 +60,58 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ['@pinia/nuxt', '@nuxtjs/turnstile', '@primevue/nuxt-module'],
+  modules: ['@pinia/nuxt', '@nuxtjs/turnstile', '@primevue/nuxt-module', '@vite-pwa/nuxt'],
+
+  pwa: {
+    registerType: 'autoUpdate',
+    manifestFilename: 'manifest.webmanifest',
+    includeAssets: [
+      'favicon.ico',
+      'favicon.png',
+      'favicon-16x16.png',
+      'favicon-32x32.png',
+      'apple-touch-icon.png',
+    ],
+    client: {
+      installPrompt: true,
+      periodicSyncForUpdates: 60 * 60,
+    },
+    workbox: {
+      globPatterns: ['**/*.{js,css,html,png,ico,webmanifest}'],
+      navigateFallback: '/',
+      cleanupOutdatedCaches: true,
+    },
+    manifest: {
+      name: 'UHours',
+      short_name: 'UHours',
+      description: 'Visual TA Hours Monitoring System for UTP Postgraduate Students',
+      start_url: '/',
+      scope: '/',
+      display: 'standalone',
+      background_color: '#ffffff',
+      theme_color: '#4A8FF0',
+      icons: [
+        {
+          src: '/icon-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: '/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: '/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+  },
 
   primevue: {
     options: {
@@ -109,10 +162,22 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
+        { rel: 'icon', type: 'image/png', href: '/favicon-32x32.png', sizes: '32x32' },
+        { rel: 'icon', type: 'image/png', href: '/favicon-16x16.png', sizes: '16x16' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap',
         },
+      ],
+      meta: [
+        { name: 'theme-color', content: '#4A8FF0' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-title', content: 'UHours' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
       ],
     },
   },

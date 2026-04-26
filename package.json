@@ -23,6 +23,7 @@
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.13.2",
     "@primevue/nuxt-module": "^4.5.5",
+    "@vite-pwa/nuxt": "^1.1.1",
     "tailwindcss": "^3.4.17",
     "tailwindcss-primeui": "^0.6.1"
   },
